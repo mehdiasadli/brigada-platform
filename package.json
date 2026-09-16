@@ -1,0 +1,35 @@
+{
+  "name": "brigada",
+  "private": true,
+  "type": "module",
+  "packageManager": "bun@1.3.14",
+  "devEngines": {
+    "packageManager": {
+      "name": "bun",
+      "version": "1.3.14"
+    }
+  },
+  "workspaces": {
+    "packages": [
+      "packages/*"
+    ],
+    "catalog": {
+      "@types/bun": "1.4.2",
+      "typescript": "^5.9.2",
+      "zod": "^4.1.5"
+    }
+  },
+  "scripts": {
+    "lint": "biome check .",
+    "format": "biome format --write .",
+    "check-types": "turbo run check-types",
+    "with-env": "infisical run --",
+    "prepare": "lefthook install"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.5.14",
+    "lefthook": "^2.1.14",
+    "turbo": "^2.10.13",
+    "typescript": "catalog:"
+  }
+}
