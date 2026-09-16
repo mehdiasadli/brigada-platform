@@ -1,0 +1,29 @@
+---
+description: Feature-branch GitHub workflow — never land work on main; open PRs with gh
+alwaysApply: true
+---
+
+# GitHub PR workflow
+
+Default branch is `main`. Do not commit, push, or open work directly on `main`.
+
+## Branch
+
+- Create a focused branch from `main`: `feat/…`, `fix/…`, `chore/…`, `docs/…`, `refactor/…`, `test/…`.
+- Keep the PR small and about one purpose.
+
+## Commits
+
+- Conventional commits only (`feat: …`, `chore(scope): …`). Lefthook `commit-msg` runs commitlint.
+- Never skip hooks (`--no-verify`). Lefthook also runs Biome on staged files.
+
+## Pull request
+
+When the work is ready (or the user asks to open a PR):
+
+1. Push the branch (`git push -u origin HEAD` if it has no upstream).
+2. Open the PR with `gh pr create`. Base is `main`.
+3. Title and body must follow `.github/pull_request_template.md` — same layout for humans and agents. Pass `--body` via a HEREDOC. Fill every section; do not leave placeholders.
+4. Return the PR URL when done.
+
+Do not merge the PR or force-push `main` unless the user explicitly asks.

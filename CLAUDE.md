@@ -68,3 +68,7 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 ---
 
 **These guidelines are working if:** fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.
+
+## Git / PRs
+
+Work on a feature branch off `main`. Open PRs with `gh pr create` using `.github/pull_request_template.md`. See `.cursor/rules/github-pr-workflow.mdc`.

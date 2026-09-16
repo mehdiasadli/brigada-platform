@@ -7,3 +7,11 @@ pre-commit:
     - name: biome
       run: bunx biome check --write --no-errors-on-unmatched --files-ignore-unknown=true {staged_files}
       stage_fixed: true
+
+commit-msg:
+  skip:
+    - merge
+    - rebase
+  jobs:
+    - name: commitlint
+      run: bunx --bun commitlint --edit {1}
