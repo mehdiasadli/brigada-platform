@@ -1,0 +1,23 @@
+---
+description: Prefer shadcn from @brigada/ui — do not invent custom UI primitives
+alwaysApply: true
+---
+
+# Shared shadcn UI
+
+All client apps use one design system: `packages/ui` (`@brigada/ui`).
+
+- Before writing markup, check whether a [shadcn](https://ui.shadcn.com) component exists (in the repo or addable via the CLI). If it does, use it.
+- Add missing shadcn components into `@brigada/ui`, then import them. Do not copy components into an app.
+- Do not build custom buttons, inputs, cards, dialogs, empty states, alerts, or similar primitives. Compose shadcn pieces instead.
+- App files may add layout (`flex`, `gap`, page structure) only. No one-off styled replacements for registry components.
+
+```tsx
+// ❌ BAD — custom primitive
+<button className="rounded-md bg-black px-4 py-2 text-white">Sign in</button>
+
+// ✅ GOOD — shared shadcn
+import { Button } from "@brigada/ui/button";
+
+<Button>Sign in with Discord</Button>
+```

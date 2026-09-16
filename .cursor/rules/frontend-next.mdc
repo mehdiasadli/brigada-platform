@@ -1,0 +1,32 @@
+---
+description: Public Next.js pages are RSC with real metadata; dashboards may be client
+globs: apps/**/app/**/*.{ts,tsx}
+alwaysApply: false
+---
+
+# Next.js pages
+
+Public Next apps (auth, marketing, www — anything that is not a dashboard) render pages on the server.
+
+- Default to Server Components. Add `"use client"` only for interactive islands (Discord button, forms), never for a whole route.
+- Every `page.tsx` / `layout.tsx` must export valid `metadata` (or `generateMetadata`) with title, description, and `metadataBase` when the app has a public URL.
+- Skip icons and Open Graph images until those assets exist. Do not invent placeholder OG/favicon files.
+- Dashboard apps may use client-heavy pages. Do not apply the RSC-only rule there.
+
+```tsx
+// ❌ BAD — client page with no metadata
+"use client";
+export default function Page() {
+  return <h1>Sign in</h1>;
+}
+
+// ✅ GOOD — server page, metadata, client island
+export const metadata = {
+  title: "Sign in",
+  description: "Sign in to Brigada with Discord.",
+};
+
+export default function Page() {
+  return <SignInButton />;
+}
+```
