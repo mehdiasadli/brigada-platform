@@ -1,0 +1,12 @@
+{
+  "extends": "@brigada/typescript-config/nestjs.json",
+  "compilerOptions": {
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "noEmit": true,
+    "types": ["node", "bun"]
+  },
+  "include": ["src"]
+}
