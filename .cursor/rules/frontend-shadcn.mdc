@@ -17,7 +17,7 @@ All client apps use one design system: `packages/ui` (`@brigada/ui`).
 <button className="rounded-md bg-black px-4 py-2 text-white">Sign in</button>
 
 // ✅ GOOD — shared shadcn
-import { Button } from "@brigada/ui/button";
+import { Button } from "@brigada/ui/components/button";
 
 <Button>Sign in with Discord</Button>
 ```
