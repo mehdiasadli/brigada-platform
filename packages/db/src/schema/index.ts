@@ -1,5 +1,2 @@
-/**
- * App tables live here. Better Auth will generate its own schema first —
- * do not add auth tables by hand.
- */
-export {};
+/** Generated Better Auth tables. Do not invent auth tables by hand. */
+export * from "./auth";
