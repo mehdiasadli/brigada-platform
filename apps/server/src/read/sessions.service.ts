@@ -174,7 +174,9 @@ export class ReadSessionsService {
     await this.sessions.setBookStatus(winner.bookId, "reading");
     await this.sessions.createProgress(
       sessionId,
-      session.readers.map((reader) => reader.userId),
+      session.readers
+        .filter((reader) => reader.participation !== "sat_out")
+        .map((reader) => reader.userId),
     );
 
     return this.getById(sessionId);
@@ -223,9 +225,15 @@ export class ReadSessionsService {
       return session;
     }
 
-    const progress = await this.sessions.listProgress(sessionId);
+    const counted = session.readers.filter(
+      (reader) => reader.participation !== "sat_out",
+    );
     const allDone =
-      progress.length > 0 && progress.every((row) => row.isCompleted);
+      counted.length > 0 &&
+      counted.every(
+        (reader) =>
+          reader.participation === "dnf" || reader.progress?.isCompleted,
+      );
     const deadlineHit =
       session.readingDeadline !== null && now > session.readingDeadline;
 
@@ -234,6 +242,130 @@ export class ReadSessionsService {
     }
 
     return session;
+  }
+
+  async resolveIfDue(sessionId: string, now = new Date()) {
+    const session = await this.getById(sessionId);
+    if (session.status !== "voting") {
+      return session;
+    }
+
+    if (!session.votingDeadline || now <= session.votingDeadline) {
+      return session;
+    }
+
+    const winnerBookId = await this.winnerFromPoll(session);
+    const resolved = await this.resolveVoting(
+      sessionId,
+      winnerBookId ? { winnerBookId } : { random: true },
+      now,
+    );
+
+    if (session.discordPollChannelId) {
+      const title =
+        resolved.book?.title ??
+        session.candidates.find(
+          (candidate) => candidate.bookId === winnerBookId,
+        )?.title ??
+        "the next book";
+      await this.votes.announceWinner(
+        session.discordPollChannelId,
+        `The club picked **${title}**.`,
+      );
+    }
+
+    return resolved;
+  }
+
+  private async winnerFromPoll(session: ReadSessionDetail) {
+    if (!session.discordPollChannelId || !session.discordPollMessageId) {
+      return undefined;
+    }
+
+    const counts = await this.votes.fetchCounts(
+      session.discordPollChannelId,
+      session.discordPollMessageId,
+    );
+    if (!counts || counts.length === 0) {
+      return undefined;
+    }
+
+    const byAnswer = new Map(
+      session.candidates.map((candidate) => [
+        candidate.discordAnswerId,
+        candidate,
+      ]),
+    );
+    let best = -1;
+    const leaders: typeof session.candidates = [];
+    for (const row of counts) {
+      const candidate = byAnswer.get(row.answerId);
+      if (!candidate) {
+        continue;
+      }
+      if (row.votes > best) {
+        best = row.votes;
+        leaders.length = 0;
+        leaders.push(candidate);
+      } else if (row.votes === best) {
+        leaders.push(candidate);
+      }
+    }
+
+    if (leaders.length === 0) {
+      return undefined;
+    }
+
+    const index = Math.floor(Math.random() * leaders.length);
+    return leaders[index]?.bookId;
+  }
+
+  async setParticipation(
+    sessionId: string,
+    userId: string,
+    participation: ReadSessionDetail["readers"][number]["participation"],
+  ) {
+    const session = await this.getById(sessionId);
+    if (session.status !== "voting" && session.status !== "active") {
+      throw new ConflictException(
+        "Participation can only change during a vote or read",
+      );
+    }
+
+    if (session.status === "voting" && participation === "dnf") {
+      throw new BadRequestException("Mark DNF after the book is picked");
+    }
+
+    if (!session.readers.some((reader) => reader.userId === userId)) {
+      throw new NotFoundException("Reader not found");
+    }
+
+    const updated = await this.sessions.setReaderParticipation(
+      sessionId,
+      userId,
+      participation,
+    );
+    if (!updated) {
+      throw new NotFoundException("Reader not found");
+    }
+
+    if (session.status === "active") {
+      await this.completeIfDue(sessionId);
+    }
+
+    return this.getById(sessionId);
+  }
+
+  async setMyParticipation(
+    userId: string,
+    participation: ReadSessionDetail["readers"][number]["participation"],
+  ) {
+    const current = await this.sessions.findOpen();
+    if (!current) {
+      throw new ConflictException("No open session");
+    }
+
+    return this.setParticipation(current.id, userId, participation);
   }
 
   async currentForMember(userId: string) {

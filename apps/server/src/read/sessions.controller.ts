@@ -13,6 +13,7 @@ import {
 import { AdminGuard } from "../users/admin.guard";
 import { parseReadMemberUserId } from "./members.query";
 import {
+  parseParticipation,
   parseProgress,
   parseReadSessionId,
   parseResolveVote,
@@ -83,6 +84,19 @@ export class ReadSessionsController {
     return this.sessions.removeReader(
       parseReadSessionId(id),
       parseReadMemberUserId(userId),
+    );
+  }
+
+  @Patch(":id/readers/:userId/participation")
+  setReaderParticipation(
+    @Param("id") id: string,
+    @Param("userId") userId: string,
+    @Body() body: unknown,
+  ) {
+    return this.sessions.setParticipation(
+      parseReadSessionId(id),
+      parseReadMemberUserId(userId),
+      parseParticipation(body).status,
     );
   }
 

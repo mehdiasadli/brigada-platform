@@ -11,6 +11,8 @@ import { format, parseISO } from "date-fns";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { BookCover } from "../components/book-cover";
+import { DeadlineClock } from "../components/deadline-clock";
+import { ParticipationControls } from "../components/participation-controls";
 import { ProgressForm } from "../components/progress-form";
 import { ReaderBoard } from "../components/reader-board";
 import { ReviewForm } from "../components/review-form";
@@ -26,11 +28,12 @@ export const metadata: Metadata = {
 };
 
 export default async function Page() {
-  await requireReadMember();
+  const auth = await requireReadMember();
   const [current, archive] = await Promise.all([
     readJson<CurrentSession>("/api/read/me/session"),
     readJson<MemberSessionSummary[]>("/api/read/sessions"),
   ]);
+  const me = auth.user.id;
   const lastCompleted = (archive ?? []).find(
     (session) => session.status === "completed",
   );
@@ -38,7 +41,7 @@ export default async function Page() {
   return (
     <main className="flex flex-col gap-12">
       {current ? (
-        <CurrentSessionHero current={current} />
+        <CurrentSessionHero current={current} userId={me} />
       ) : (
         <Empty className="border">
           <EmptyHeader>
@@ -72,13 +75,20 @@ export default async function Page() {
 
 function CurrentSessionHero({
   current,
+  userId,
 }: {
   current: NonNullable<CurrentSession>;
+  userId: string;
 }) {
   const { session, progress } = current;
   const book = session.book;
+  const mine = session.readers.find((reader) => reader.userId === userId);
   const showBoard =
     session.status === "active" || session.status === "completed";
+  const canTrack =
+    session.status === "active" &&
+    progress &&
+    mine?.participation === "reading";
 
   if (session.status === "voting") {
     return (
@@ -93,6 +103,22 @@ function CurrentSessionHero({
           <p className="max-w-xl text-muted-foreground">
             The slate is up. Cast your votes in the reading channel.
           </p>
+          {session.votingDeadline ? (
+            <DeadlineClock deadline={session.votingDeadline} />
+          ) : null}
+          {session.pollUrl ? (
+            <Button
+              render={
+                <a href={session.pollUrl} rel="noreferrer" target="_blank" />
+              }
+            >
+              Open Discord poll
+            </Button>
+          ) : null}
+          <ParticipationControls
+            mine={session.readers.find((reader) => reader.userId === userId)}
+            sessionStatus={session.status}
+          />
         </div>
         <div className="grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
           {session.candidates.map((candidate) => (
@@ -167,7 +193,10 @@ function CurrentSessionHero({
               {current.canReview ? <ReviewForm bookId={book.id} /> : null}
             </div>
           ) : null}
-          {session.status === "active" && progress ? (
+          {session.status === "active" || session.status === "voting" ? (
+            <ParticipationControls mine={mine} sessionStatus={session.status} />
+          ) : null}
+          {canTrack && progress ? (
             <ProgressForm
               bookId={book?.id}
               initialNotes={progress.notes}

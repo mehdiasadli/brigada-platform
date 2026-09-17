@@ -36,6 +36,13 @@
       "when": 1789651995453,
       "tag": "0004_neat_whistler",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1789658970186,
+      "tag": "0005_read_reader_status",
+      "breakpoints": true
     }
   ]
 }

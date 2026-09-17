@@ -3,6 +3,7 @@ import { ChannelType, Client } from "discord.js";
 import { VOTING_MS } from "../read/sessions.service";
 import type {
   VoteCandidate,
+  VoteCount,
   VotePublisher,
   VotePublishResult,
 } from "../read/vote-publisher";
@@ -52,5 +53,34 @@ export class DiscordVotePublisher implements VotePublisher {
         answerId: index + 1,
       })),
     };
+  }
+
+  async fetchCounts(
+    channelId: string,
+    messageId: string,
+  ): Promise<VoteCount[] | null> {
+    const channel = await this.client.channels.fetch(channelId);
+    if (!channel || !channel.isTextBased() || channel.isDMBased()) {
+      return null;
+    }
+
+    const message = await channel.messages.fetch(messageId);
+    if (!message.poll) {
+      return null;
+    }
+
+    return [...message.poll.answers.values()].map((answer) => ({
+      answerId: Number(answer.id),
+      votes: answer.voteCount,
+    }));
+  }
+
+  async announceWinner(channelId: string, content: string) {
+    const channel = await this.client.channels.fetch(channelId);
+    if (!channel || channel.type !== ChannelType.GuildText) {
+      throw new Error("Read Discord channel is missing or not a text channel");
+    }
+
+    await channel.send({ content });
   }
 }

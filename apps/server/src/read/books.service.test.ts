@@ -92,19 +92,12 @@ test("throws when a book is missing", async () => {
   );
 });
 
-test("reallocates the slug when the title changes", async () => {
-  const store = createStore({
-    update: mock(() =>
-      Promise.resolve({ ...book, title: "Dune", slug: "dune" }),
-    ),
-  });
+test("keeps the slug when the title changes", async () => {
+  const store = createStore();
   const service = await createService(store);
 
   await service.update(book.id, { title: "Dune" });
-  expect(store.update).toHaveBeenCalledWith(
-    book.id,
-    expect.objectContaining({ title: "Dune", slug: "dune" }),
-  );
+  expect(store.update).toHaveBeenCalledWith(book.id, { title: "Dune" });
 });
 
 test("lets a member review a club book they have not reviewed", async () => {

@@ -60,6 +60,7 @@ export function BookSheet({
         | "subtitle"
         | "description"
         | "status"
+        | "coverId"
       >
     >,
   ) => void;
@@ -72,6 +73,7 @@ export function BookSheet({
   const [pageCount, setPageCount] = useState<number | null>(null);
   const [firstPublishYear, setFirstPublishYear] = useState<number | null>(null);
   const [status, setStatus] = useState<ReadBook["status"]>("readlist");
+  const [coverId, setCoverId] = useState<number | null>(null);
   const [confirmRemove, setConfirmRemove] = useState(false);
 
   useEffect(() => {
@@ -86,6 +88,7 @@ export function BookSheet({
     setPageCount(book.pageCount);
     setFirstPublishYear(book.firstPublishYear);
     setStatus(book.status);
+    setCoverId(book.coverId);
     setConfirmRemove(false);
   }, [book]);
 
@@ -107,7 +110,7 @@ export function BookSheet({
               </Badge>
               <SheetTitle>Edit book</SheetTitle>
               <SheetDescription>
-                Cover stays as imported from OpenLibrary.
+                Edit catalog fields. Cover uses an Open Library cover id.
               </SheetDescription>
             </SheetHeader>
             <form
@@ -131,13 +134,14 @@ export function BookSheet({
                   pageCount,
                   firstPublishYear,
                   status,
+                  coverId,
                 });
               }}
             >
               <div className="flex gap-4">
                 <BookCover
                   className="w-24 shrink-0"
-                  coverId={book.coverId}
+                  coverId={coverId}
                   title={book.title}
                 />
                 <p className="text-sm text-muted-foreground">
@@ -187,6 +191,16 @@ export function BookSheet({
                     min={1000}
                     onValueChange={setFirstPublishYear}
                     value={firstPublishYear}
+                  />
+                </Field>
+                <Field>
+                  <FieldLabel htmlFor="book-cover">Cover id</FieldLabel>
+                  <NumberInput
+                    allowEmpty
+                    id="book-cover"
+                    min={1}
+                    onValueChange={setCoverId}
+                    value={coverId}
                   />
                 </Field>
                 <Field>

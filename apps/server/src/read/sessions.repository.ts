@@ -226,6 +226,25 @@ export class ReadSessionsRepository implements ReadSessionsStore {
     return deleted.length > 0;
   }
 
+  async setReaderParticipation(
+    sessionId: string,
+    userId: string,
+    participation: Parameters<ReadSessionsStore["setReaderParticipation"]>[2],
+  ) {
+    const updated = await db
+      .update(readSessionReader)
+      .set({ status: participation })
+      .where(
+        and(
+          eq(readSessionReader.sessionId, sessionId),
+          eq(readSessionReader.userId, userId),
+        ),
+      )
+      .returning({ id: readSessionReader.id });
+
+    return updated.length > 0;
+  }
+
   async listMemberIds() {
     const rows = await db
       .select({ userId: readMember.userId })
@@ -422,6 +441,7 @@ export class ReadSessionsRepository implements ReadSessionsStore {
         username: user.username,
         name: user.name,
         image: user.image,
+        participation: readSessionReader.status,
       })
       .from(readSessionReader)
       .innerJoin(user, eq(user.id, readSessionReader.userId))

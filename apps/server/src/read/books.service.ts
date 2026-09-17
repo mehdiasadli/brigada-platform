@@ -103,14 +103,7 @@ export class ReadBooksService {
       throw new NotFoundException("Book not found");
     }
 
-    const next = { ...patch };
-    if (patch.title && patch.title !== current.title) {
-      const taken = new Set(await this.books.listSlugs());
-      taken.delete(current.slug);
-      next.slug = uniquifySlug(slugifyTitle(patch.title), taken);
-    }
-
-    const updated = await this.books.update(id, next);
+    const updated = await this.books.update(id, patch);
     if (!updated) {
       throw new NotFoundException("Book not found");
     }
