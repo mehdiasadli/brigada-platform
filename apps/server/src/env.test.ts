@@ -6,12 +6,14 @@ const schema = {
     PORT: z.coerce.number().int().positive().default(4000),
     DISCORD_BOT_TOKEN: z.string().min(1),
     DISCORD_GUILD_ID: z.string().regex(/^\d{17,20}$/),
+    DISCORD_READ_CHANNEL_ID: z.string().regex(/^\d{17,20}$/),
   },
 } as const;
 
 const discord = {
   DISCORD_BOT_TOKEN: "bot-token",
   DISCORD_GUILD_ID: "123456789012345678",
+  DISCORD_READ_CHANNEL_ID: "123456789012345679",
 } as const;
 
 test("defaults to port 4000", () => {
