@@ -24,6 +24,7 @@
     }
   },
   "scripts": {
+    "dev": "bun run with-env -- turbo run dev --filter=./apps/* --env-mode=loose",
     "lint": "biome check .",
     "format": "biome format --write .",
     "check-types": "turbo run check-types",
