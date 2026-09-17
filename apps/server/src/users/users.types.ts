@@ -35,6 +35,7 @@ export type UsersStore = {
 };
 
 export type SessionUser = {
+  id?: string;
   role?: string | null;
 };
 
