@@ -124,6 +124,17 @@ function createStore(
       }),
     ),
     findReview: mock(() => Promise.resolve(null)),
+    updateReview: mock(() =>
+      Promise.resolve({
+        id: "r1",
+        bookId,
+        userId,
+        body: "edited",
+        rating: 6,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      }),
+    ),
     ...overrides,
   };
 }
@@ -297,6 +308,27 @@ test("accepts a review once the club has started the book", async () => {
   await expect(
     service.createReview(userId, { bookId, rating: 8 }),
   ).resolves.toMatchObject({ rating: 8 });
+});
+
+test("updates an existing review", async () => {
+  const store = createStore(session(), {
+    findReview: mock(() =>
+      Promise.resolve({
+        id: "r1",
+        bookId,
+        userId,
+        body: "old",
+        rating: 8,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      }),
+    ),
+  });
+  const service = await createService(store);
+
+  await expect(
+    service.updateReview(userId, { bookId, rating: 6, body: "edited" }),
+  ).resolves.toMatchObject({ rating: 6, body: "edited" });
 });
 
 test("lists member sessions without private notes", async () => {

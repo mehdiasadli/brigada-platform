@@ -1,7 +1,14 @@
 import { db } from "@brigada/db";
-import { readBook, readMember, readReview, user } from "@brigada/db/schema";
+import {
+  readBook,
+  readMember,
+  readProgress,
+  readReview,
+  readSession,
+  user,
+} from "@brigada/db/schema";
 import { Injectable } from "@nestjs/common";
-import { desc, eq, type SQL } from "drizzle-orm";
+import { and, count, desc, eq, type SQL } from "drizzle-orm";
 import type { AdminUser } from "../users/users.types";
 import type { ReadMember, ReadMembersStore } from "./members.types";
 
@@ -97,6 +104,66 @@ export class ReadMembersRepository implements ReadMembersStore {
       memberSince: member.createdAt,
       reviews,
     };
+  }
+
+  async countFinished(userId: string) {
+    const [row] = await db
+      .select({ value: count() })
+      .from(readProgress)
+      .where(
+        and(
+          eq(readProgress.userId, userId),
+          eq(readProgress.isCompleted, true),
+        ),
+      );
+
+    return Number(row?.value ?? 0);
+  }
+
+  async findCurrentReading(userId: string) {
+    const [row] = await db
+      .select({
+        title: readBook.title,
+        slug: readBook.slug,
+        percentage: readProgress.percentage,
+      })
+      .from(readProgress)
+      .innerJoin(readSession, eq(readSession.id, readProgress.sessionId))
+      .innerJoin(readBook, eq(readBook.id, readSession.bookId))
+      .where(
+        and(eq(readProgress.userId, userId), eq(readSession.status, "active")),
+      )
+      .limit(1);
+
+    return row ?? null;
+  }
+
+  async listCurrentReading() {
+    return db
+      .select({
+        userId: readProgress.userId,
+        title: readBook.title,
+        slug: readBook.slug,
+        percentage: readProgress.percentage,
+      })
+      .from(readProgress)
+      .innerJoin(readSession, eq(readSession.id, readProgress.sessionId))
+      .innerJoin(readBook, eq(readBook.id, readSession.bookId))
+      .where(eq(readSession.status, "active"));
+  }
+
+  async listLastFinished() {
+    return db
+      .selectDistinctOn([readProgress.userId], {
+        userId: readProgress.userId,
+        title: readBook.title,
+        slug: readBook.slug,
+      })
+      .from(readProgress)
+      .innerJoin(readSession, eq(readSession.id, readProgress.sessionId))
+      .innerJoin(readBook, eq(readBook.id, readSession.bookId))
+      .where(eq(readProgress.isCompleted, true))
+      .orderBy(readProgress.userId, desc(readProgress.completedAt));
   }
 
   async userExists(userId: string) {

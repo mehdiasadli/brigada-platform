@@ -111,11 +111,13 @@ export default async function Page({
               initialNotes={ownProgress?.notes ?? null}
               initialPercentage={ownProgress?.percentage ?? 0}
             />
-          ) : ownProgress?.isCompleted ? (
-            <p className="text-sm text-muted-foreground">Finished</p>
           ) : null}
-          {canReview ? (
-            <ReviewForm bookId={book.id} defaultOpen={reviewQuery === "1"} />
+          {canReview || ownReview ? (
+            <ReviewForm
+              bookId={book.id}
+              defaultOpen={reviewQuery === "1" && canReview}
+              review={ownReview}
+            />
           ) : null}
         </div>
       </section>

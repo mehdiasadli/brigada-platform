@@ -1,14 +1,20 @@
 import {
+  Body,
   Controller,
   Get,
   Inject,
   Param,
+  Post,
   Query,
   Req,
   UseGuards,
 } from "@nestjs/common";
 import type { Request } from "express";
-import { parseCatalogQuery } from "./books.query";
+import {
+  parseCatalogQuery,
+  parseCreateReadBook,
+  parseSearchBooksQuery,
+} from "./books.query";
 import { ReadBooksService } from "./books.service";
 import { ReadMembersService } from "./members.service";
 import { ReadMemberGuard } from "./read-member.guard";
@@ -34,9 +40,19 @@ export class ReadCatalogController {
     return this.sessions.getForMember(parseReadSessionId(id));
   }
 
+  @Get("search")
+  search(@Query() query: Record<string, string | undefined>) {
+    return this.books.search(parseSearchBooksQuery(query).q);
+  }
+
   @Get("books")
   listBooks(@Query() query: Record<string, string | undefined>) {
     return this.books.listCatalog(parseCatalogQuery(query));
+  }
+
+  @Post("books")
+  nominate(@Body() body: unknown) {
+    return this.books.create(parseCreateReadBook(body));
   }
 
   @Get("books/:slug")

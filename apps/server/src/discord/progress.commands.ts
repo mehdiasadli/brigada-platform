@@ -30,6 +30,13 @@ class SetProgressOptions {
     max_length: 200,
   })
   notes?: string;
+
+  @StringOption({
+    name: "book_id",
+    description: "Book id when finishing after the session ended",
+    required: false,
+  })
+  bookId?: string;
 }
 
 class GetProgressOptions {
@@ -71,6 +78,7 @@ export class ProgressCommands {
       const progress = await this.sessions.setProgress(userId, {
         percentage: options.percentage,
         notes: options.notes ?? null,
+        bookId: options.bookId,
       });
       return interaction.reply({
         content: `Progress set to ${progress.percentage}%.`,

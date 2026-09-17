@@ -26,7 +26,21 @@ type DirectoryMember = {
   username: string;
   image: string | null;
   memberSince: string;
+  status:
+    | { kind: "reading"; title: string; slug: string; percentage: number }
+    | { kind: "finished"; title: string; slug: string }
+    | { kind: "idle" };
 };
+
+function statusLine(member: DirectoryMember) {
+  if (member.status.kind === "reading") {
+    return `Reading ${member.status.title} · ${member.status.percentage}%`;
+  }
+  if (member.status.kind === "finished") {
+    return `Finished ${member.status.title}`;
+  }
+  return `Joined ${format(parseISO(member.memberSince), "d MMM yyyy")}`;
+}
 
 export default async function Page() {
   const auth = await requireReadMember();
@@ -71,8 +85,8 @@ export default async function Page() {
                   <span className="font-medium">{member.name}</span>
                   <span className="text-sm text-muted-foreground">
                     @{member.username}
-                    {member.username === me ? " · You" : ""} · joined{" "}
-                    {format(parseISO(member.memberSince), "d MMM yyyy")}
+                    {member.username === me ? " · You" : ""} ·{" "}
+                    {statusLine(member)}
                   </span>
                 </span>
               </Link>
