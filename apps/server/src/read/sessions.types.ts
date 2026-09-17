@@ -92,6 +92,7 @@ export type ReadSessionsStore = {
         | "readingDeadline"
         | "discordPollMessageId"
         | "discordPollChannelId"
+        | "midtermPostedAt"
       >
     >,
   ): Promise<void>;

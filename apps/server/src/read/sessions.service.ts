@@ -27,6 +27,10 @@ export class ReadSessionsService {
     return this.sessions.list();
   }
 
+  markMidtermPosted(sessionId: string, now = new Date()) {
+    return this.sessions.update(sessionId, { midtermPostedAt: now });
+  }
+
   suggest() {
     return this.sessions.listReadlist();
   }

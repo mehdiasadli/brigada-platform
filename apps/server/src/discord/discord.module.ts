@@ -14,6 +14,7 @@ import { DiscordVotePublisher } from "./discord-vote.publisher";
 import { GuildLockGuard } from "./guild-lock.guard";
 import { PingCommand } from "./ping.command";
 import { ProgressCommands } from "./progress.commands";
+import { ReadLoop } from "./read-loop";
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { ProgressCommands } from "./progress.commands";
     DiscordVotePublisher,
     PingCommand,
     ProgressCommands,
+    ReadLoop,
   ],
   exports: [DiscordVotePublisher],
 })
