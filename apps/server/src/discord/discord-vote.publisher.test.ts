@@ -34,7 +34,7 @@ test("posts a multi-select poll with a slate above it", async () => {
     expect.objectContaining({
       poll: expect.objectContaining({
         allowMultiselect: true,
-        duration: 12,
+        duration: 1,
       }),
     }),
   );

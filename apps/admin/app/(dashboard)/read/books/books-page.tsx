@@ -10,8 +10,10 @@ import {
   TableHeader,
   TableRow,
 } from "@brigada/ui/components/table";
+import { toast } from "@brigada/ui/components/toast";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
+import { ActionError, firstError } from "../../../../components/action-error";
 import {
   createReadBook,
   listReadBooks,
@@ -60,6 +62,14 @@ export function ReadBooksPage() {
           adding.
         </p>
       </div>
+      <ActionError
+        error={firstError(
+          books.error,
+          search.error,
+          create.error,
+          remove.error,
+        )}
+      />
       <form
         className="flex gap-2"
         onSubmit={(event) => {
@@ -162,6 +172,12 @@ export function ReadBooksPage() {
                           !draft.pageCount ||
                           !draft.firstPublishYear
                         ) {
+                          toast.add({
+                            type: "warning",
+                            title: "Fill the required fields",
+                            description:
+                              "Title, author, pages, and year are required.",
+                          });
                           return;
                         }
 

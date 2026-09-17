@@ -1,11 +1,14 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { ChannelType, Client } from "discord.js";
+import { VOTING_MS } from "../read/sessions.service";
 import type {
   VoteCandidate,
   VotePublisher,
   VotePublishResult,
 } from "../read/vote-publisher";
 import { DISCORD_READ_CHANNEL_ID } from "./discord.constants";
+
+const HOUR_MS = 60 * 60 * 1000;
 
 const POLL_ANSWER_MAX = 55;
 
@@ -36,10 +39,16 @@ export class DiscordVotePublisher implements VotePublisher {
         answers: candidates.map((candidate) => ({
           text: candidate.title.slice(0, POLL_ANSWER_MAX),
         })),
-        duration: 12,
+        duration: Math.max(1, Math.ceil(VOTING_MS / HOUR_MS)),
         allowMultiselect: true,
       },
     });
+
+    if (VOTING_MS < HOUR_MS && message.poll) {
+      setTimeout(() => {
+        void message.poll.end();
+      }, VOTING_MS);
+    }
 
     return {
       messageId: message.id,

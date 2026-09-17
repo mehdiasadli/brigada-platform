@@ -1,4 +1,5 @@
 import type { AdminUser } from "./admin-users";
+import { throwIfNotOk } from "./api-error";
 
 export type ReadMember = {
   user: AdminUser;
@@ -65,9 +66,7 @@ async function readAdminFetch<T>(path: string, init?: RequestInit): Promise<T> {
     },
   });
 
-  if (!response.ok) {
-    throw new Error("Read admin request failed");
-  }
+  await throwIfNotOk(response, "Read admin request failed");
 
   if (response.status === 204) {
     return undefined as T;

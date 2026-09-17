@@ -3,7 +3,7 @@ import { expect, mock, test } from "bun:test";
 import { BadRequestException, ConflictException } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
 import { READ_SESSIONS_REPOSITORY, VOTE_PUBLISHER } from "./read.constants";
-import { ReadSessionsService } from "./sessions.service";
+import { ReadSessionsService, VOTING_MS } from "./sessions.service";
 import type { ReadSessionCandidate, ReadSessionDetail } from "./sessions.types";
 
 const bookId = "33333333-3333-4333-8333-333333333333";
@@ -159,6 +159,7 @@ test("starts voting with every current member", async () => {
     expect.objectContaining({
       status: "voting",
       votingStartedAt: now,
+      votingDeadline: new Date(now.getTime() + VOTING_MS),
     }),
   );
 });

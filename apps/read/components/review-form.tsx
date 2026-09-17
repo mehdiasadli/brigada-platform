@@ -1,9 +1,17 @@
 "use client";
 
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from "@brigada/ui/components/alert";
 import { Button } from "@brigada/ui/components/button";
 import { Input } from "@brigada/ui/components/input";
+import { toast } from "@brigada/ui/components/toast";
+import { CircleAlertIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { readResponseError } from "../lib/api-error";
 
 export function ReviewForm({ bookId }: { bookId: string }) {
   const router = useRouter();
@@ -31,7 +39,16 @@ export function ReviewForm({ bookId }: { bookId: string }) {
         })
           .then(async (response) => {
             if (!response.ok) {
-              setError("Could not save the review. Finish the book first?");
+              const message = await readResponseError(
+                response,
+                "Could not save the review",
+              );
+              setError(message);
+              toast.add({
+                type: "error",
+                title: "That didn’t work",
+                description: message,
+              });
               return;
             }
             router.refresh();
@@ -59,7 +76,13 @@ export function ReviewForm({ bookId }: { bookId: string }) {
           value={body}
         />
       </div>
-      {error ? <p className="text-sm text-destructive">{error}</p> : null}
+      {error ? (
+        <Alert variant="destructive">
+          <CircleAlertIcon />
+          <AlertTitle>That didn’t work</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      ) : null}
       <Button disabled={pending} type="submit">
         Publish review
       </Button>

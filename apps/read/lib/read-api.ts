@@ -1,5 +1,6 @@
 import { headers } from "next/headers";
 import { env } from "../env";
+import { parseApiErrorMessage } from "./api-error";
 
 export async function readApi(path: string, init?: RequestInit) {
   const cookie = (await headers()).get("cookie");
@@ -14,15 +15,23 @@ export async function readApi(path: string, init?: RequestInit) {
   });
 }
 
-export async function readJson<T>(path: string): Promise<T | null> {
-  const response = await readApi(path);
-  if (response.status === 404) {
+export function parseReadJson<T>(status: number, body: string): T | null {
+  if (status === 404 || status === 204) {
     return null;
   }
 
-  if (!response.ok) {
-    throw new Error(`Failed to load ${path}`);
+  if (status < 200 || status >= 300) {
+    throw new Error(parseApiErrorMessage(body, "Failed to load"));
   }
 
-  return (await response.json()) as T;
+  if (body.trim() === "") {
+    return null;
+  }
+
+  return JSON.parse(body) as T;
+}
+
+export async function readJson<T>(path: string): Promise<T | null> {
+  const response = await readApi(path);
+  return parseReadJson<T>(response.status, await response.text());
 }

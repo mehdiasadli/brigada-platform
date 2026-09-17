@@ -25,6 +25,7 @@ import {
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format, parseISO } from "date-fns";
 import { CircleAlertIcon } from "lucide-react";
+import { ActionError, firstError } from "../../../../components/action-error";
 import {
   adminUsersQueryKey,
   listAdminUsers,
@@ -93,6 +94,7 @@ export function ReadMembersPage() {
           </AlertAction>
         </Alert>
       ) : null}
+      <ActionError error={firstError(grant.error, revoke.error)} />
       <section className="flex flex-col gap-3">
         <h2 className="text-sm font-medium">Members</h2>
         {members.isPending ? (

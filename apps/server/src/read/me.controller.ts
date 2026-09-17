@@ -3,6 +3,7 @@ import {
   Controller,
   Get,
   Inject,
+  NotFoundException,
   Patch,
   Post,
   Req,
@@ -21,8 +22,15 @@ export class ReadMeController {
   ) {}
 
   @Get("session")
-  current(@Req() request: Request & { userId?: string }) {
-    return this.sessions.currentForMember(requireUserId(request));
+  async current(@Req() request: Request & { userId?: string }) {
+    const current = await this.sessions.currentForMember(
+      requireUserId(request),
+    );
+    if (!current) {
+      throw new NotFoundException("No open session");
+    }
+
+    return current;
   }
 
   @Patch("progress")

@@ -11,7 +11,7 @@ import { READ_SESSIONS_REPOSITORY, VOTE_PUBLISHER } from "./read.constants";
 import type { ReadSessionDetail, ReadSessionsStore } from "./sessions.types";
 import type { VotePublisher } from "./vote-publisher";
 
-export const VOTING_HOURS = 12;
+export const VOTING_MS = 20_000;
 export const MIN_CANDIDATES = 2;
 export const MAX_CANDIDATES = 10;
 
@@ -104,7 +104,7 @@ export class ReadSessionsService {
     await this.sessions.update(sessionId, {
       status: "voting",
       votingStartedAt: now,
-      votingDeadline: new Date(now.getTime() + VOTING_HOURS * 60 * 60 * 1000),
+      votingDeadline: new Date(now.getTime() + VOTING_MS),
       discordPollMessageId: published.messageId,
       discordPollChannelId: published.channelId,
     });

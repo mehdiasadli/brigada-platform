@@ -4,6 +4,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import "@brigada/ui/globals.css";
 import { env } from "../env";
+import { Providers } from "./providers";
 
 const fontSans = Geist({
   subsets: ["latin"],
@@ -38,9 +39,11 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             </Link>
           </nav>
         </header>
-        <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-8">
-          {children}
-        </div>
+        <Providers>
+          <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-8">
+            {children}
+          </div>
+        </Providers>
       </body>
     </html>
   );

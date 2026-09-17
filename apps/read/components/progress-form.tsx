@@ -1,9 +1,17 @@
 "use client";
 
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from "@brigada/ui/components/alert";
 import { Button } from "@brigada/ui/components/button";
 import { Input } from "@brigada/ui/components/input";
+import { toast } from "@brigada/ui/components/toast";
+import { CircleAlertIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { readResponseError } from "../lib/api-error";
 
 export function ProgressForm({
   initialPercentage,
@@ -16,6 +24,7 @@ export function ProgressForm({
   const [percentage, setPercentage] = useState(initialPercentage);
   const [notes, setNotes] = useState(initialNotes ?? "");
   const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   return (
     <form
@@ -23,6 +32,7 @@ export function ProgressForm({
       onSubmit={(event) => {
         event.preventDefault();
         setPending(true);
+        setError(null);
         void fetch("/api/read/me/progress", {
           method: "PATCH",
           credentials: "include",
@@ -31,10 +41,24 @@ export function ProgressForm({
             percentage,
             notes: notes.trim() || null,
           }),
-        }).finally(() => {
-          setPending(false);
-          router.refresh();
-        });
+        })
+          .then(async (response) => {
+            if (!response.ok) {
+              const message = await readResponseError(
+                response,
+                "Could not save progress",
+              );
+              setError(message);
+              toast.add({
+                type: "error",
+                title: "That didn’t work",
+                description: message,
+              });
+              return;
+            }
+            router.refresh();
+          })
+          .finally(() => setPending(false));
       }}
     >
       <div className="flex flex-col gap-1 text-sm">
@@ -56,6 +80,13 @@ export function ProgressForm({
           value={notes}
         />
       </div>
+      {error ? (
+        <Alert variant="destructive">
+          <CircleAlertIcon />
+          <AlertTitle>That didn’t work</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      ) : null}
       <Button disabled={pending} type="submit">
         Save progress
       </Button>

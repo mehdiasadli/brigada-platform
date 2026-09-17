@@ -11,6 +11,7 @@ import {
 } from "@brigada/ui/components/table";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
+import { ActionError, firstError } from "../../../../components/action-error";
 import {
   cancelReadSession,
   completeReadSession,
@@ -102,6 +103,19 @@ export function ReadSessionsPage() {
           New session
         </Button>
       </div>
+      <ActionError
+        error={firstError(
+          sessions.error,
+          detail.error,
+          create.error,
+          saveSlate.error,
+          start.error,
+          resolve.error,
+          cancel.error,
+          complete.error,
+          removeReader.error,
+        )}
+      />
       <Table>
         <TableHeader>
           <TableRow>
