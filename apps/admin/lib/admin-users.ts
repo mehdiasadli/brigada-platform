@@ -69,3 +69,17 @@ export async function listAdminUsers(
 
   return (await response.json()) as AdminUserList;
 }
+
+export async function getAdminUser(id: string): Promise<AdminUser | null> {
+  const response = await adminFetch(`/api/admin/users/${id}`);
+
+  if (response.status === 404) {
+    return null;
+  }
+
+  if (!response.ok) {
+    throw new Error("Failed to load user");
+  }
+
+  return (await response.json()) as AdminUser;
+}
