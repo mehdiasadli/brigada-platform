@@ -1,4 +1,6 @@
-import { Module } from "@nestjs/common";
+import { forwardRef, Module } from "@nestjs/common";
+import { DiscordModule } from "../discord/discord.module";
+import { DiscordVotePublisher } from "../discord/discord-vote.publisher";
 import { UsersModule } from "../users/users.module";
 import { ReadBooksController } from "./books.controller";
 import { ReadBooksRepository } from "./books.repository";
@@ -19,10 +21,9 @@ import { ReadMemberGuard } from "./read-member.guard";
 import { ReadSessionsController } from "./sessions.controller";
 import { ReadSessionsRepository } from "./sessions.repository";
 import { ReadSessionsService } from "./sessions.service";
-import { NoopVotePublisher } from "./vote-publisher";
 
 @Module({
-  imports: [UsersModule],
+  imports: [UsersModule, forwardRef(() => DiscordModule)],
   controllers: [
     ReadMembersController,
     ReadBooksController,
@@ -41,8 +42,7 @@ import { NoopVotePublisher } from "./vote-publisher";
     ReadSessionsService,
     ReadSessionsRepository,
     { provide: READ_SESSIONS_REPOSITORY, useExisting: ReadSessionsRepository },
-    NoopVotePublisher,
-    { provide: VOTE_PUBLISHER, useExisting: NoopVotePublisher },
+    { provide: VOTE_PUBLISHER, useExisting: DiscordVotePublisher },
     ReadMemberGuard,
   ],
   exports: [ReadSessionsService, READ_MEMBERS_REPOSITORY],
