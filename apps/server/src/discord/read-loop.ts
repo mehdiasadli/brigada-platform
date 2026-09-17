@@ -37,6 +37,11 @@ export class ReadLoop {
       return;
     }
 
+    if (open.status === "voting") {
+      await this.sessions.resolveIfDue(open.id, now);
+      return;
+    }
+
     if (open.status === "active") {
       await this.sessions.completeIfDue(open.id, now);
     }

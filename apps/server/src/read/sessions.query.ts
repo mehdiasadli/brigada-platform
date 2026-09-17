@@ -64,6 +64,19 @@ export const reviewSchema = z.object({
   body: z.string().trim().max(20_000).nullable().optional(),
 });
 
+export const participationSchema = z.object({
+  status: z.enum(["reading", "sat_out", "dnf"]),
+});
+
+export function parseParticipation(input: unknown) {
+  const parsed = participationSchema.safeParse(input);
+  if (!parsed.success) {
+    throw new BadRequestException("Invalid participation");
+  }
+
+  return parsed.data;
+}
+
 export function parseReview(input: unknown) {
   const parsed = reviewSchema.safeParse(input);
   if (!parsed.success) {

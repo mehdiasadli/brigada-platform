@@ -59,13 +59,17 @@ function session(
     createdAt: new Date("2026-01-01"),
     updatedAt: new Date("2026-01-01"),
     book: null,
-    candidates: [candidate, { ...candidate, id: "c2", bookId: otherBookId }],
+    candidates: [
+      candidate,
+      { ...candidate, id: "c2", bookId: otherBookId, discordAnswerId: 2 },
+    ],
     readers: [
       {
         userId,
         username: "ada",
         name: "Ada",
         image: null,
+        participation: "reading" as const,
         progress: null,
         review: null,
       },
@@ -88,6 +92,7 @@ function createStore(
     setCandidateAnswers: mock(() => Promise.resolve()),
     replaceReaders: mock(() => Promise.resolve()),
     removeReader: mock(() => Promise.resolve(true)),
+    setReaderParticipation: mock(() => Promise.resolve(true)),
     listMemberIds: mock(() => Promise.resolve([userId])),
     findBooksByIds: mock(() =>
       Promise.resolve([book, { ...book, id: otherBookId }]),
@@ -141,19 +146,31 @@ function createStore(
 
 async function createService(
   store: ReturnType<typeof createStore>,
-  postPoll = mock(() =>
-    Promise.resolve({
-      messageId: "m1",
-      channelId: "c1",
-      answers: [{ candidateId: candidate.id, answerId: 1 }],
-    }),
-  ),
+  votes: {
+    postPoll?: ReturnType<typeof mock>;
+    fetchCounts?: ReturnType<typeof mock>;
+    announceWinner?: ReturnType<typeof mock>;
+  } = {},
 ) {
+  const postPoll =
+    votes.postPoll ??
+    mock(() =>
+      Promise.resolve({
+        messageId: "m1",
+        channelId: "c1",
+        answers: [{ candidateId: candidate.id, answerId: 1 }],
+      }),
+    );
+  const fetchCounts = votes.fetchCounts ?? mock(() => Promise.resolve(null));
+  const announceWinner = votes.announceWinner ?? mock(() => Promise.resolve());
   const module = await Test.createTestingModule({
     providers: [
       ReadSessionsService,
       { provide: READ_SESSIONS_REPOSITORY, useValue: store },
-      { provide: VOTE_PUBLISHER, useValue: { postPoll } },
+      {
+        provide: VOTE_PUBLISHER,
+        useValue: { postPoll, fetchCounts, announceWinner },
+      },
     ],
   }).compile();
 
@@ -342,6 +359,7 @@ test("lists member sessions without private notes", async () => {
         username: "ada",
         name: "Ada",
         image: null,
+        participation: "reading",
         progress: {
           percentage: 100,
           notes: "secret",
@@ -368,12 +386,56 @@ test("lists member sessions without private notes", async () => {
   expect(JSON.stringify(listed)).not.toContain("secret");
 });
 
-test("completes when every reader is done", async () => {
-  const store = createStore(session({ status: "active", bookId }), {
-    listProgress: mock(() =>
-      Promise.resolve([{ isCompleted: true }, { isCompleted: true }]),
-    ),
-  });
+test("completes when every counted reader is done or DNF", async () => {
+  const store = createStore(
+    session({
+      status: "active",
+      bookId,
+      readers: [
+        {
+          userId,
+          username: "ada",
+          name: "Ada",
+          image: null,
+          participation: "reading",
+          progress: {
+            percentage: 100,
+            notes: null,
+            isCompleted: true,
+            startedAt: null,
+            completedAt: null,
+            progressUpdatedAt: new Date(),
+          },
+          review: null,
+        },
+        {
+          userId: "u2",
+          username: "al",
+          name: "Al",
+          image: null,
+          participation: "dnf",
+          progress: {
+            percentage: 20,
+            notes: null,
+            isCompleted: false,
+            startedAt: null,
+            completedAt: null,
+            progressUpdatedAt: new Date(),
+          },
+          review: null,
+        },
+        {
+          userId: "u3",
+          username: "bev",
+          name: "Bev",
+          image: null,
+          participation: "sat_out",
+          progress: null,
+          review: null,
+        },
+      ],
+    }),
+  );
   const service = await createService(store);
 
   await service.completeIfDue(sessionId);
@@ -381,5 +443,45 @@ test("completes when every reader is done", async () => {
   expect(store.update).toHaveBeenCalledWith(
     sessionId,
     expect.objectContaining({ status: "completed" }),
+  );
+});
+
+test("resolves a vote from Discord counts after the deadline", async () => {
+  const current = session({
+    status: "voting",
+    votingDeadline: new Date("2026-09-14T10:00:00.000Z"),
+    discordPollMessageId: "m1",
+    discordPollChannelId: "c1",
+  });
+  const store = createStore(current);
+  const announceWinner = mock(() => Promise.resolve());
+  const service = await createService(store, {
+    fetchCounts: mock(() =>
+      Promise.resolve([
+        { answerId: 1, votes: 3 },
+        { answerId: 2, votes: 1 },
+      ]),
+    ),
+    announceWinner,
+  });
+
+  await service.resolveIfDue(sessionId, new Date("2026-09-14T11:00:00.000Z"));
+
+  expect(store.update).toHaveBeenCalledWith(
+    sessionId,
+    expect.objectContaining({ bookId, status: "active" }),
+  );
+  expect(announceWinner).toHaveBeenCalled();
+});
+
+test("lets a reader sit out during voting", async () => {
+  const store = createStore(session({ status: "voting" }));
+  const service = await createService(store);
+
+  await service.setParticipation(sessionId, userId, "sat_out");
+  expect(store.setReaderParticipation).toHaveBeenCalledWith(
+    sessionId,
+    userId,
+    "sat_out",
   );
 });

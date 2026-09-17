@@ -12,8 +12,18 @@ export type VotePublishResult = {
   answers: Array<{ candidateId: string; answerId: number }>;
 };
 
+export type VoteCount = {
+  answerId: number;
+  votes: number;
+};
+
 export type VotePublisher = {
   postPoll(candidates: VoteCandidate[]): Promise<VotePublishResult>;
+  fetchCounts(
+    channelId: string,
+    messageId: string,
+  ): Promise<VoteCount[] | null>;
+  announceWinner(channelId: string, content: string): Promise<void>;
 };
 
 export class NoopVotePublisher implements VotePublisher {
@@ -27,4 +37,10 @@ export class NoopVotePublisher implements VotePublisher {
       })),
     };
   }
+
+  async fetchCounts() {
+    return null;
+  }
+
+  async announceWinner() {}
 }

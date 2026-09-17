@@ -83,6 +83,7 @@ export function SessionSheet({
   onComplete,
   onCancel,
   onUpdateProgress,
+  onSetParticipation,
 }: {
   open: boolean;
   loading: boolean;
@@ -102,6 +103,10 @@ export function SessionSheet({
   onUpdateProgress: (
     userId: string,
     input: { percentage: number; notes: string | null },
+  ) => void;
+  onSetParticipation: (
+    userId: string,
+    status: ReadSessionReader["participation"],
   ) => void;
 }) {
   const [confirm, setConfirm] = useState<ConfirmKind | null>(null);
@@ -327,6 +332,11 @@ export function SessionSheet({
                             </span>
                             <span className="text-sm text-muted-foreground">
                               @{reader.username}
+                              {reader.participation === "sat_out"
+                                ? " · Sitting out"
+                                : reader.participation === "dnf"
+                                  ? " · Did not finish"
+                                  : ""}
                             </span>
                           </div>
                           {canEdit || canVote ? (
@@ -343,6 +353,25 @@ export function SessionSheet({
                               variant="ghost"
                             >
                               Remove
+                            </Button>
+                          ) : null}
+                          {canVote || canEditProgress ? (
+                            <Button
+                              disabled={pending}
+                              onClick={() =>
+                                onSetParticipation(
+                                  reader.userId,
+                                  reader.participation === "sat_out"
+                                    ? "reading"
+                                    : "sat_out",
+                                )
+                              }
+                              size="sm"
+                              variant="ghost"
+                            >
+                              {reader.participation === "sat_out"
+                                ? "Back in"
+                                : "Sit out"}
                             </Button>
                           ) : null}
                           {canEditProgress ? (

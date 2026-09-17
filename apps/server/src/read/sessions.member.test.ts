@@ -40,6 +40,7 @@ const session: ReadSessionDetail = {
       username: "ada",
       name: "Ada",
       image: "https://cdn.example/ada.png",
+      participation: "reading",
       progress: {
         percentage: 100,
         notes: "private note",
@@ -55,6 +56,7 @@ const session: ReadSessionDetail = {
       username: "al",
       name: "Al",
       image: null,
+      participation: "reading",
       progress: {
         percentage: 40,
         notes: "another note",
@@ -78,6 +80,7 @@ test("strips notes and review bodies from member sessions", () => {
     username: "ada",
     name: "Ada",
     image: "https://cdn.example/ada.png",
+    participation: "reading",
     progress: { percentage: 100, isCompleted: true },
     rating: 8,
   });

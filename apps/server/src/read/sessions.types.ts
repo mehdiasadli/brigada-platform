@@ -29,11 +29,14 @@ export type ReadSessionReaderReview = {
   body: string | null;
 };
 
+export type ReadReaderParticipation = "reading" | "sat_out" | "dnf";
+
 export type ReadSessionReader = {
   userId: string;
   username: string;
   name: string;
   image: string | null;
+  participation: ReadReaderParticipation;
   progress: ReadSessionReaderProgress | null;
   review: ReadSessionReaderReview | null;
 };
@@ -124,6 +127,11 @@ export type ReadSessionsStore = {
   ): Promise<void>;
   replaceReaders(sessionId: string, userIds: string[]): Promise<void>;
   removeReader(sessionId: string, userId: string): Promise<boolean>;
+  setReaderParticipation(
+    sessionId: string,
+    userId: string,
+    participation: ReadReaderParticipation,
+  ): Promise<boolean>;
   listMemberIds(): Promise<string[]>;
   findBooksByIds(ids: string[]): Promise<ReadBook[]>;
   listReadlist(): Promise<ReadBook[]>;

@@ -11,7 +11,11 @@ import {
 } from "@nestjs/common";
 import type { Request } from "express";
 import { ReadMemberGuard } from "./read-member.guard";
-import { parseProgress, parseReview } from "./sessions.query";
+import {
+  parseParticipation,
+  parseProgress,
+  parseReview,
+} from "./sessions.query";
 import { ReadSessionsService } from "./sessions.service";
 
 @Controller("api/read/me")
@@ -52,6 +56,17 @@ export class ReadMeController {
     return this.sessions.createReview(
       requireUserId(request),
       parseReview(body),
+    );
+  }
+
+  @Patch("participation")
+  setParticipation(
+    @Req() request: Request & { userId?: string },
+    @Body() body: unknown,
+  ) {
+    return this.sessions.setMyParticipation(
+      requireUserId(request),
+      parseParticipation(body).status,
     );
   }
 

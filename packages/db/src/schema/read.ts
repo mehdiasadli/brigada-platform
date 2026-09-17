@@ -35,6 +35,12 @@ export const readSessionStatusEnum = pgEnum(
   READ_SESSION_STATUS_VALUES,
 );
 
+export const READ_READER_STATUS_VALUES = ["reading", "sat_out", "dnf"] as const;
+export const readReaderStatusEnum = pgEnum(
+  "read_reader_status",
+  READ_READER_STATUS_VALUES,
+);
+
 export const readMember = pgTable("read_member", {
   userId: uuid("user_id")
     .primaryKey()
@@ -126,6 +132,7 @@ export const readSessionReader = pgTable(
     userId: uuid("user_id")
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
+    status: readReaderStatusEnum("status").default("reading").notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },
   (table) => [

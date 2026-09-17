@@ -23,6 +23,7 @@ import {
   readSessionsQueryKey,
   removeReadReader,
   resolveReadVote,
+  setReadReaderParticipation,
   setReadReaderProgress,
   setReadSlate,
   startReadVoting,
@@ -111,6 +112,16 @@ export function ReadSessionsPage() {
     mutationFn: (userId: string) => removeReadReader(selectedId ?? "", userId),
     onSuccess: invalidate,
   });
+  const updateParticipation = useMutation({
+    mutationFn: ({
+      userId,
+      status,
+    }: {
+      userId: string;
+      status: "reading" | "sat_out" | "dnf";
+    }) => setReadReaderParticipation(selectedId ?? "", userId, status),
+    onSuccess: invalidate,
+  });
   const updateProgress = useMutation({
     mutationFn: ({
       userId,
@@ -129,7 +140,8 @@ export function ReadSessionsPage() {
     cancel.isPending ||
     complete.isPending ||
     removeReader.isPending ||
-    updateProgress.isPending;
+    updateProgress.isPending ||
+    updateParticipation.isPending;
 
   return (
     <div className="flex flex-col gap-6">
@@ -157,6 +169,7 @@ export function ReadSessionsPage() {
           complete.error,
           removeReader.error,
           updateProgress.error,
+          updateParticipation.error,
         )}
       />
       {(sessions.data ?? []).length === 0 ? (
@@ -210,6 +223,9 @@ export function ReadSessionsPage() {
           );
         }}
         onStartVoting={() => start.mutate()}
+        onSetParticipation={(userId, status) =>
+          updateParticipation.mutate({ userId, status })
+        }
         onUpdateProgress={(userId, input) =>
           updateProgress.mutate({ userId, input })
         }

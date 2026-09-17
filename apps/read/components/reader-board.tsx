@@ -8,7 +8,10 @@ import { initials } from "../lib/initials";
 import type { MemberSessionReader } from "../lib/read-types";
 
 export function ReaderBoard({ readers }: { readers: MemberSessionReader[] }) {
-  if (readers.length === 0) {
+  const visible = readers.filter(
+    (reader) => reader.participation !== "sat_out",
+  );
+  if (visible.length === 0) {
     return (
       <p className="text-sm text-muted-foreground">
         No readers on this session.
@@ -18,7 +21,7 @@ export function ReaderBoard({ readers }: { readers: MemberSessionReader[] }) {
 
   return (
     <ul className="flex flex-col">
-      {readers.map((reader) => (
+      {visible.map((reader) => (
         <li key={reader.userId}>
           <Link
             className="flex items-center gap-3 border-b py-3 last:border-b-0 hover:bg-muted/40"
@@ -34,11 +37,13 @@ export function ReaderBoard({ readers }: { readers: MemberSessionReader[] }) {
               <span className="font-medium">{reader.name}</span>
             </span>
             <span className="text-sm text-muted-foreground">
-              {reader.progress?.isCompleted
-                ? "Finished"
-                : reader.progress
-                  ? `${reader.progress.percentage}%`
-                  : "Not started"}
+              {reader.participation === "dnf"
+                ? "Did not finish"
+                : reader.progress?.isCompleted
+                  ? "Finished"
+                  : reader.progress
+                    ? `${reader.progress.percentage}%`
+                    : "Not started"}
             </span>
           </Link>
         </li>
