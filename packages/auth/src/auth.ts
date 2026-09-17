@@ -13,6 +13,7 @@ import {
   isBrigadaUsername,
   USERNAME_MAX_LENGTH,
   USERNAME_MIN_LENGTH,
+  userFieldsFromDiscordProfile,
 } from "./username";
 
 export const auth = betterAuth({
@@ -28,12 +29,7 @@ export const auth = betterAuth({
     discord: {
       clientId: env.DISCORD_CLIENT_ID,
       clientSecret: env.DISCORD_CLIENT_SECRET,
-      mapProfileToUser: (profile) => ({
-        email:
-          profile.email ?? `discord-${profile.id}@users.noreply.brigada.local`,
-        name: profile.global_name ?? profile.username,
-        image: profile.image_url,
-      }),
+      mapProfileToUser: (profile) => userFieldsFromDiscordProfile(profile),
     },
   },
   account: {

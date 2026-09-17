@@ -13,4 +13,6 @@ export {
   isBrigadaUsername,
   USERNAME_MAX_LENGTH,
   USERNAME_MIN_LENGTH,
+  userFieldsFromDiscordProfile,
+  usernameFromDiscord,
 } from "./username";
