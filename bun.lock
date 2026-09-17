@@ -14,6 +14,28 @@
         "typescript": "catalog:",
       },
     },
+    "apps/admin": {
+      "name": "@brigada/admin",
+      "version": "0.0.0",
+      "dependencies": {
+        "@brigada/auth": "workspace:*",
+        "@brigada/env": "workspace:*",
+        "@brigada/ui": "workspace:*",
+        "next": "16.3.3",
+        "react": "catalog:",
+        "react-dom": "catalog:",
+      },
+      "devDependencies": {
+        "@brigada/typescript-config": "workspace:*",
+        "@tailwindcss/postcss": "^4.3.3",
+        "@types/bun": "catalog:",
+        "@types/node": "^24.5.2",
+        "@types/react": "^19",
+        "@types/react-dom": "^19",
+        "tailwindcss": "^4.3.3",
+        "typescript": "catalog:",
+      },
+    },
     "apps/auth": {
       "name": "@brigada/auth-web",
       "version": "0.0.0",
@@ -273,6 +295,8 @@
     "@biomejs/cli-win32-x64": ["@biomejs/cli-win32-x64@2.5.14", "", { "os": "win32", "cpu": "x64" }, "sha512-oJWmBhoHsnhUKIke+0gXDX0mltJrWHA1UyHsrTlXwX0TL64ilVZAo+TYZm97baecV0esBdpzy3k96q+09JaZUQ=="],
 
     "@borewit/text-codec": ["@borewit/text-codec@0.2.2", "", {}, "sha512-DDaRehssg1aNrH4+2hnj1B7vnUGEjU6OIlyRdkMd0aUdIUvKXrJfXsy8LVtXAy7DRvYVluWbMspsRhz2lcW0mQ=="],
+
+    "@brigada/admin": ["@brigada/admin@workspace:apps/admin"],
 
     "@brigada/auth": ["@brigada/auth@workspace:packages/auth"],
 
