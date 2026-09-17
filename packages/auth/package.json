@@ -20,9 +20,14 @@
     "@brigada/env": "workspace:*",
     "better-auth": "catalog:"
   },
+  "peerDependencies": {
+    "react": "catalog:"
+  },
   "devDependencies": {
     "@brigada/typescript-config": "workspace:*",
     "@types/bun": "catalog:",
+    "@types/react": "^19",
+    "react": "catalog:",
     "typescript": "catalog:"
   }
 }

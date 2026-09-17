@@ -1,0 +1,32 @@
+{
+  "name": "@brigada/auth-web",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev --port 3500",
+    "build": "next build",
+    "start": "next start --port 3500",
+    "check-types": "tsc --noEmit",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "@brigada/auth": "workspace:*",
+    "@brigada/env": "workspace:*",
+    "@brigada/ui": "workspace:*",
+    "next": "16.3.3",
+    "nuqs": "^2.10.1",
+    "react": "catalog:",
+    "react-dom": "catalog:"
+  },
+  "devDependencies": {
+    "@brigada/typescript-config": "workspace:*",
+    "@tailwindcss/postcss": "^4.3.3",
+    "@types/bun": "catalog:",
+    "@types/node": "^24.5.2",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "tailwindcss": "^4.3.3",
+    "typescript": "catalog:"
+  }
+}
