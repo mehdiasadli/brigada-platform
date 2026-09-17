@@ -41,27 +41,28 @@ export function ProgressForm({
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  if (initialPercentage >= 100) {
-    return <p className="text-sm text-muted-foreground">Finished</p>;
-  }
+  const finished = initialPercentage >= 100;
 
   return (
     <>
       <div className="flex flex-col gap-3">
         <p className="text-sm text-muted-foreground">
-          {initialPercentage}% done
-          {initialNotes ? ` · ${initialNotes}` : ""}
+          {finished
+            ? "Finished"
+            : `${initialPercentage}% done${
+                initialNotes ? ` · ${initialNotes}` : ""
+              }`}
         </p>
         <Button
           onClick={() => {
-            setPercentage(initialPercentage);
+            setPercentage(finished ? 99 : initialPercentage);
             setNotes(initialNotes ?? "");
             setError(null);
             setOpen(true);
           }}
           variant="outline"
         >
-          Update progress
+          {finished ? "Not finished" : "Update progress"}
         </Button>
       </div>
       <Dialog onOpenChange={setOpen} open={open}>

@@ -29,6 +29,11 @@ function createStore(overrides: Record<string, ReturnType<typeof mock>> = {}) {
   return {
     list: mock(() => Promise.resolve([member])),
     findByUserId: mock(() => Promise.resolve(null)),
+    findProfileByUsername: mock(() => Promise.resolve(null)),
+    countFinished: mock(() => Promise.resolve(0)),
+    findCurrentReading: mock(() => Promise.resolve(null)),
+    listCurrentReading: mock(() => Promise.resolve([])),
+    listLastFinished: mock(() => Promise.resolve([])),
     userExists: mock(() => Promise.resolve(true)),
     insert: mock(() => Promise.resolve(member)),
     delete: mock(() => Promise.resolve(true)),
@@ -63,8 +68,75 @@ test("lists a public member directory without emails", async () => {
       username: "ada",
       image: null,
       memberSince: member.createdAt,
+      status: { kind: "idle" },
     },
   ]);
+});
+
+test("shows current reading on the public directory", async () => {
+  const service = await createService(
+    createStore({
+      listCurrentReading: mock(() =>
+        Promise.resolve([
+          {
+            userId: member.user.id,
+            title: "Dune",
+            slug: "dune",
+            percentage: 40,
+          },
+        ]),
+      ),
+    }),
+  );
+
+  await expect(service.listDirectory()).resolves.toMatchObject([
+    {
+      username: "ada",
+      status: {
+        kind: "reading",
+        title: "Dune",
+        slug: "dune",
+        percentage: 40,
+      },
+    },
+  ]);
+});
+
+test("returns a public profile without email", async () => {
+  const service = await createService(
+    createStore({
+      findProfileByUsername: mock(() =>
+        Promise.resolve({
+          user: member.user,
+          memberSince: member.createdAt,
+          reviews: [
+            {
+              id: "r1",
+              bookId: "b1",
+              bookTitle: "Dune",
+              bookSlug: "dune",
+              rating: 8,
+              body: null,
+              createdAt: new Date("2026-09-01"),
+            },
+          ],
+        }),
+      ),
+      countFinished: mock(() => Promise.resolve(2)),
+      findCurrentReading: mock(() =>
+        Promise.resolve({ title: "Dune", slug: "dune", percentage: 40 }),
+      ),
+    }),
+  );
+
+  const profile = await service.getProfile("ada");
+  expect(profile).toMatchObject({
+    user: { name: "Ada", username: "ada", image: null },
+    finishedCount: 2,
+    averageRating: 8,
+    current: { title: "Dune", slug: "dune", percentage: 40 },
+  });
+  expect(JSON.stringify(profile)).not.toContain("ada@brigada.com");
 });
 
 test("grants membership to an existing user", async () => {

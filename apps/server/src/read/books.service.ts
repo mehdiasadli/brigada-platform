@@ -64,7 +64,7 @@ export class ReadBooksService {
       viewer: {
         canReview:
           !review && (book.status === "reading" || book.status === "completed"),
-        canUpdateProgress: Boolean(progress) && !progress.isCompleted,
+        canUpdateProgress: Boolean(progress),
         review,
         progress,
       },

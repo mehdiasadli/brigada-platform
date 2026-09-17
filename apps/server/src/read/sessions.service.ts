@@ -378,6 +378,26 @@ export class ReadSessionsService {
       rating: input.rating,
     });
   }
+
+  async updateReview(
+    userId: string,
+    input: { bookId: string; rating: number; body?: string | null },
+  ) {
+    const existing = await this.sessions.findReview(userId, input.bookId);
+    if (!existing) {
+      throw new NotFoundException("Review not found");
+    }
+
+    const updated = await this.sessions.updateReview(userId, input.bookId, {
+      rating: input.rating,
+      body: input.body ?? null,
+    });
+    if (!updated) {
+      throw new NotFoundException("Review not found");
+    }
+
+    return updated;
+  }
 }
 
 function orderBooks(books: ReadBook[], bookIds: string[]) {
