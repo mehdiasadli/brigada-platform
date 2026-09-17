@@ -1,5 +1,6 @@
 "use client";
 
+import { Badge } from "@brigada/ui/components/badge";
 import { Button } from "@brigada/ui/components/button";
 import {
   Table,
@@ -10,7 +11,8 @@ import {
   TableRow,
 } from "@brigada/ui/components/table";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { format, parseISO } from "date-fns";
+import { useEffect, useState } from "react";
 import { ActionError, firstError } from "../../../../components/action-error";
 import {
   cancelReadSession,
@@ -25,6 +27,22 @@ import {
   startReadVoting,
   suggestReadBooks,
 } from "../../../../lib/read-admin";
+import { SessionSheet } from "./session-sheet";
+
+function sessionLabel(status: string) {
+  switch (status) {
+    case "voting":
+      return "Voting";
+    case "active":
+      return "Reading";
+    case "completed":
+      return "Finished";
+    case "cancelled":
+      return "Cancelled";
+    default:
+      return "Not started";
+  }
+}
 
 export function ReadSessionsPage() {
   const queryClient = useQueryClient();
@@ -44,6 +62,12 @@ export function ReadSessionsPage() {
     queryKey: ["read-session-suggest"],
     queryFn: suggestReadBooks,
   });
+
+  useEffect(() => {
+    if (detail.data) {
+      setSlate(detail.data.candidates.map((candidate) => candidate.bookId));
+    }
+  }, [detail.data]);
 
   function invalidate() {
     void queryClient.invalidateQueries({ queryKey: readSessionsQueryKey() });
@@ -87,7 +111,13 @@ export function ReadSessionsPage() {
     onSuccess: invalidate,
   });
 
-  const session = detail.data;
+  const pending =
+    saveSlate.isPending ||
+    start.isPending ||
+    resolve.isPending ||
+    cancel.isPending ||
+    complete.isPending ||
+    removeReader.isPending;
 
   return (
     <div className="flex flex-col gap-6">
@@ -96,7 +126,7 @@ export function ReadSessionsPage() {
           <h1 className="text-2xl font-medium">Sessions</h1>
           <p className="text-sm text-muted-foreground">
             One open session at a time. Build a slate, start the Discord vote,
-            then resolve a winner.
+            then pick a winner.
           </p>
         </div>
         <Button disabled={create.isPending} onClick={() => create.mutate()}>
@@ -116,132 +146,63 @@ export function ReadSessionsPage() {
           removeReader.error,
         )}
       />
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Status</TableHead>
-            <TableHead>Created</TableHead>
-            <TableHead />
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {(sessions.data ?? []).map((row) => (
-            <TableRow key={row.id}>
-              <TableCell>{row.status}</TableCell>
-              <TableCell>{row.createdAt}</TableCell>
-              <TableCell className="text-right">
-                <Button
-                  onClick={() => setSelectedId(row.id)}
-                  size="sm"
-                  variant="outline"
-                >
-                  Open
-                </Button>
-              </TableCell>
+      {(sessions.data ?? []).length === 0 ? (
+        <p className="text-sm text-muted-foreground">No sessions yet.</p>
+      ) : (
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Status</TableHead>
+              <TableHead>Created</TableHead>
+              <TableHead />
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-      {session ? (
-        <section className="flex flex-col gap-4">
-          <h2 className="text-sm font-medium">
-            Session {session.status}
-            {session.book ? ` · ${session.book.title}` : ""}
-          </h2>
-          {session.status === "not_started" ? (
-            <div className="flex flex-col gap-3">
-              <p className="text-sm text-muted-foreground">
-                Select 2–10 books, save the slate, then start voting.
-              </p>
-              {(suggestions.data ?? []).map((book) => (
-                <label
-                  className="flex items-center gap-2 text-sm"
-                  key={book.id}
-                >
-                  <input
-                    checked={slate.includes(book.id)}
-                    onChange={(event) => {
-                      setSlate((current) =>
-                        event.target.checked
-                          ? [...current, book.id]
-                          : current.filter((id) => id !== book.id),
-                      );
-                    }}
-                    type="checkbox"
-                  />
-                  {book.title} · {book.author} · {book.pageCount}p ·{" "}
-                  {book.firstPublishYear}
-                </label>
-              ))}
-              <div className="flex gap-2">
-                <Button
-                  disabled={saveSlate.isPending}
-                  onClick={() => saveSlate.mutate()}
-                  variant="outline"
-                >
-                  Save slate
-                </Button>
-                <Button
-                  disabled={start.isPending}
-                  onClick={() => start.mutate()}
-                >
-                  Start voting
-                </Button>
-              </div>
-            </div>
-          ) : null}
-          {session.candidates.length > 0 ? (
-            <p className="text-sm text-muted-foreground">
-              Slate:{" "}
-              {session.candidates
-                .map((candidate) => candidate.title)
-                .join(", ")}
-            </p>
-          ) : null}
-          {session.status === "voting" ? (
-            <div className="flex flex-wrap gap-2">
-              {session.candidates.map((candidate) => (
-                <Button
-                  key={candidate.id}
-                  onClick={() =>
-                    resolve.mutate({ winnerBookId: candidate.bookId })
-                  }
-                  size="sm"
-                  variant="outline"
-                >
-                  Pick {candidate.title}
-                </Button>
-              ))}
-              <Button
-                onClick={() => resolve.mutate({ random: true })}
-                size="sm"
-              >
-                Random
-              </Button>
-              {session.readers.map((reader) => (
-                <Button
-                  key={reader.userId}
-                  onClick={() => removeReader.mutate(reader.userId)}
-                  size="sm"
-                  variant="ghost"
-                >
-                  Remove {reader.username}
-                </Button>
-              ))}
-            </div>
-          ) : null}
-          {session.status === "active" ? (
-            <Button onClick={() => complete.mutate()}>Force complete</Button>
-          ) : null}
-          {session.status === "not_started" ||
-          session.status === "voting" ||
-          session.status === "active" ? (
-            <Button onClick={() => cancel.mutate()} variant="destructive">
-              Cancel session
-            </Button>
-          ) : null}
-        </section>
-      ) : null}
+          </TableHeader>
+          <TableBody>
+            {(sessions.data ?? []).map((row) => (
+              <TableRow key={row.id}>
+                <TableCell>
+                  <Badge variant="secondary">{sessionLabel(row.status)}</Badge>
+                </TableCell>
+                <TableCell>
+                  {format(parseISO(row.createdAt), "d MMM yyyy")}
+                </TableCell>
+                <TableCell className="text-right">
+                  <Button
+                    onClick={() => setSelectedId(row.id)}
+                    size="sm"
+                    variant="outline"
+                  >
+                    Open
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      )}
+      <SessionSheet
+        loading={detail.isPending}
+        onCancel={() => cancel.mutate()}
+        onClose={() => setSelectedId(null)}
+        onComplete={() => complete.mutate()}
+        onPickWinner={(bookId) => resolve.mutate({ winnerBookId: bookId })}
+        onRandomWinner={() => resolve.mutate({ random: true })}
+        onRemoveReader={(userId) => removeReader.mutate(userId)}
+        onSaveSlate={() => saveSlate.mutate()}
+        onSlateChange={(bookId, selected) => {
+          setSlate((current) =>
+            selected
+              ? [...current, bookId]
+              : current.filter((id) => id !== bookId),
+          );
+        }}
+        onStartVoting={() => start.mutate()}
+        open={selectedId !== null}
+        pending={pending}
+        session={detail.data}
+        slate={slate}
+        suggestions={suggestions.data ?? []}
+      />
     </div>
   );
 }

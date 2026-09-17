@@ -34,6 +34,8 @@ const candidate: ReadSessionCandidate = {
   author: book.author,
   pageCount: book.pageCount,
   firstPublishYear: book.firstPublishYear,
+  coverId: book.coverId,
+  slug: book.slug,
   discordAnswerId: 1,
 };
 

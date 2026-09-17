@@ -10,6 +10,8 @@ export type ReadSessionCandidate = {
   author: string;
   pageCount: number;
   firstPublishYear: number;
+  coverId: number | null;
+  slug: string | null;
   discordAnswerId: number | null;
 };
 

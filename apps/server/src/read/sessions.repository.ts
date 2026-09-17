@@ -152,7 +152,10 @@ export class ReadSessionsRepository implements ReadSessionsStore {
       )
       .returning();
 
-    return rows.map(toCandidate);
+    return rows.map((row) => {
+      const book = books.find((item) => item.id === row.bookId);
+      return toCandidate(row, book?.coverId ?? null, book?.slug ?? null);
+    });
   }
 
   async setCandidateAnswers(
@@ -330,11 +333,16 @@ export class ReadSessionsRepository implements ReadSessionsStore {
 
   private async listCandidates(sessionId: string) {
     const rows = await db
-      .select()
+      .select({
+        candidate: readSessionCandidate,
+        coverId: readBook.coverId,
+        slug: readBook.slug,
+      })
       .from(readSessionCandidate)
+      .innerJoin(readBook, eq(readBook.id, readSessionCandidate.bookId))
       .where(eq(readSessionCandidate.sessionId, sessionId));
 
-    return rows.map(toCandidate);
+    return rows.map((row) => toCandidate(row.candidate, row.coverId, row.slug));
   }
 
   private async listReaders(sessionId: string) {
@@ -354,6 +362,8 @@ export class ReadSessionsRepository implements ReadSessionsStore {
 
 function toCandidate(
   row: typeof readSessionCandidate.$inferSelect,
+  coverId: number | null,
+  slug: string | null,
 ): ReadSessionCandidate {
   return {
     id: row.id,
@@ -362,6 +372,8 @@ function toCandidate(
     author: row.author,
     pageCount: row.pageCount,
     firstPublishYear: row.firstPublishYear,
+    coverId,
+    slug,
     discordAnswerId: row.discordAnswerId,
   };
 }

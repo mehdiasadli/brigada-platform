@@ -28,19 +28,22 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en" className={`${fontSans.variable} ${fontMono.variable}`}>
-      <body className="min-h-svh font-sans antialiased">
+      <body className="min-h-dvh font-sans antialiased">
         <header className="border-b">
-          <nav className="mx-auto flex h-12 max-w-3xl items-center gap-4 px-4 text-sm">
+          <nav className="mx-auto flex h-14 max-w-6xl items-center gap-6 px-4 text-sm">
             <Link className="font-medium" href="/">
               Read
             </Link>
-            <Link className="text-muted-foreground" href="/books">
+            <Link
+              className="text-muted-foreground hover:text-foreground"
+              href="/books"
+            >
               Books
             </Link>
           </nav>
         </header>
         <Providers>
-          <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-8">
+          <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 py-8">
             {children}
           </div>
         </Providers>

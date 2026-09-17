@@ -44,12 +44,6 @@ export class DiscordVotePublisher implements VotePublisher {
       },
     });
 
-    if (VOTING_MS < HOUR_MS && message.poll) {
-      setTimeout(() => {
-        void message.poll.end();
-      }, VOTING_MS);
-    }
-
     return {
       messageId: message.id,
       channelId: message.channelId,

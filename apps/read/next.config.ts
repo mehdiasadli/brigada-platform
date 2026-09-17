@@ -18,6 +18,15 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "covers.openlibrary.org",
+        pathname: "/b/id/**",
+      },
+    ],
+  },
   experimental: {
     authInterrupts: true,
     optimizePackageImports: ["lucide-react", "date-fns"],

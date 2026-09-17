@@ -16,7 +16,13 @@ export type ReadSession = {
   status: string;
   readingDeadline: string | null;
   book: ReadBook | null;
-  candidates: Array<{ title: string; author: string; pageCount: number }>;
+  candidates: Array<{
+    title: string;
+    author: string;
+    pageCount: number;
+    coverId: number | null;
+    slug: string | null;
+  }>;
   readers: Array<{ userId: string; username: string; name: string }>;
 };
 

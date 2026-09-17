@@ -51,6 +51,8 @@ export type ReadSessionDetail = ReadSession & {
     author: string;
     pageCount: number;
     firstPublishYear: number;
+    coverId: number | null;
+    slug: string | null;
   }>;
   readers: Array<{ userId: string; username: string; name: string }>;
 };
