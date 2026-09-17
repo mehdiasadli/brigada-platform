@@ -42,11 +42,13 @@
       "version": "0.0.0",
       "dependencies": {
         "@brigada/auth": "workspace:*",
+        "@brigada/db": "workspace:*",
         "@brigada/env": "workspace:*",
         "@nestjs/common": "^11.1.6",
         "@nestjs/core": "^11.1.6",
         "@nestjs/platform-express": "^11.1.6",
         "discord.js": "^14.27.0",
+        "drizzle-orm": "^0.44.7",
         "necord": "^7.0.0",
         "reflect-metadata": "^0.2.2",
         "rxjs": "^7.8.2",
