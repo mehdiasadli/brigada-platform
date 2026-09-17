@@ -44,6 +44,7 @@ export function parseResolveVote(input: unknown) {
 }
 
 export const progressSchema = z.object({
+  bookId: z.uuid().optional(),
   percentage: z.coerce.number().int().min(0).max(100),
   notes: z.string().trim().max(2000).nullable().optional(),
 });

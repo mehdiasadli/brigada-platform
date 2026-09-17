@@ -1,4 +1,14 @@
-import { Controller, Get, Inject, Param, UseGuards } from "@nestjs/common";
+import {
+  Controller,
+  Get,
+  Inject,
+  Param,
+  Query,
+  Req,
+  UseGuards,
+} from "@nestjs/common";
+import type { Request } from "express";
+import { parseCatalogQuery } from "./books.query";
 import { ReadBooksService } from "./books.service";
 import { ReadMembersService } from "./members.service";
 import { ReadMemberGuard } from "./read-member.guard";
@@ -12,13 +22,21 @@ export class ReadCatalogController {
   ) {}
 
   @Get("books")
-  listBooks() {
-    return this.books.listVisible();
+  listBooks(@Query() query: Record<string, string | undefined>) {
+    return this.books.listCatalog(parseCatalogQuery(query));
   }
 
   @Get("books/:slug")
-  getBook(@Param("slug") slug: string) {
-    return this.books.getBySlug(slug);
+  getBook(
+    @Param("slug") slug: string,
+    @Req() request: Request & { userId?: string },
+  ) {
+    return this.books.getBySlug(slug, request.userId);
+  }
+
+  @Get("members")
+  listMembers() {
+    return this.members.listDirectory();
   }
 
   @Get("members/:username")

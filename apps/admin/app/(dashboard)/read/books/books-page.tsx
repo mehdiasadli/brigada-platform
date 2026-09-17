@@ -2,7 +2,9 @@
 
 import { Badge } from "@brigada/ui/components/badge";
 import { Button } from "@brigada/ui/components/button";
+import { Field, FieldLabel } from "@brigada/ui/components/field";
 import { Input } from "@brigada/ui/components/input";
+import { NumberInput } from "@brigada/ui/components/number-input";
 import {
   Table,
   TableBody,
@@ -25,6 +27,7 @@ import {
   searchOpenLibrary,
   updateReadBook,
 } from "../../../../lib/read-admin";
+import { BookSheet } from "./book-sheet";
 
 function bookStatusLabel(status: ReadBook["status"]) {
   switch (status) {
@@ -59,6 +62,7 @@ export function ReadBooksPage() {
   const [drafts, setDrafts] = useState<Record<string, Partial<OpenLibraryHit>>>(
     {},
   );
+  const [editing, setEditing] = useState<ReadBook | null>(null);
 
   const books = useQuery({
     queryKey: readBooksQueryKey(),
@@ -78,10 +82,28 @@ export function ReadBooksPage() {
     },
   });
 
+  const update = useMutation({
+    mutationFn: ({
+      id,
+      patch,
+    }: {
+      id: string;
+      patch: Parameters<typeof updateReadBook>[1];
+    }) => updateReadBook(id, patch),
+    onSuccess: (book) => {
+      toast.add({ type: "success", title: "Book updated" });
+      setEditing(book);
+      void queryClient.invalidateQueries({ queryKey: readBooksQueryKey() });
+    },
+  });
+
   const remove = useMutation({
     mutationFn: (id: string) => updateReadBook(id, { status: "removed" }),
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: readBooksQueryKey() }),
+    onSuccess: () => {
+      toast.add({ type: "success", title: "Book removed" });
+      setEditing(null);
+      void queryClient.invalidateQueries({ queryKey: readBooksQueryKey() });
+    },
   });
 
   return (
@@ -98,6 +120,7 @@ export function ReadBooksPage() {
           books.error,
           search.error,
           create.error,
+          update.error,
           remove.error,
         )}
       />
@@ -178,50 +201,48 @@ export function ReadBooksPage() {
                         }
                       />
                     </div>
-                    <div className="flex flex-col gap-1">
-                      <label
-                        className="text-sm"
-                        htmlFor={`pages-${hit.olibKey}`}
-                      >
+                    <Field>
+                      <FieldLabel htmlFor={`pages-${hit.olibKey}`}>
                         Pages
-                      </label>
-                      <Input
-                        defaultValue={hit.pageCount ?? ""}
+                      </FieldLabel>
+                      <NumberInput
+                        allowEmpty
                         id={`pages-${hit.olibKey}`}
-                        onChange={(event) =>
+                        max={20_000}
+                        min={1}
+                        onValueChange={(pageCount) =>
                           setDrafts((current) => ({
                             ...current,
                             [hit.olibKey]: {
                               ...current[hit.olibKey],
-                              pageCount: Number(event.target.value),
+                              pageCount: pageCount ?? undefined,
                             },
                           }))
                         }
-                        type="number"
+                        value={draft.pageCount ?? null}
                       />
-                    </div>
-                    <div className="flex flex-col gap-1">
-                      <label
-                        className="text-sm"
-                        htmlFor={`year-${hit.olibKey}`}
-                      >
+                    </Field>
+                    <Field>
+                      <FieldLabel htmlFor={`year-${hit.olibKey}`}>
                         Year
-                      </label>
-                      <Input
-                        defaultValue={hit.firstPublishYear ?? ""}
+                      </FieldLabel>
+                      <NumberInput
+                        allowEmpty
                         id={`year-${hit.olibKey}`}
-                        onChange={(event) =>
+                        max={2100}
+                        min={1000}
+                        onValueChange={(firstPublishYear) =>
                           setDrafts((current) => ({
                             ...current,
                             [hit.olibKey]: {
                               ...current[hit.olibKey],
-                              firstPublishYear: Number(event.target.value),
+                              firstPublishYear: firstPublishYear ?? undefined,
                             },
                           }))
                         }
-                        type="number"
+                        value={draft.firstPublishYear ?? null}
                       />
-                    </div>
+                    </Field>
                   </div>
                   <Button
                     className="md:mt-6"
@@ -299,15 +320,13 @@ export function ReadBooksPage() {
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
-                    {book.status !== "removed" ? (
-                      <Button
-                        onClick={() => remove.mutate(book.id)}
-                        size="sm"
-                        variant="outline"
-                      >
-                        Remove
-                      </Button>
-                    ) : null}
+                    <Button
+                      onClick={() => setEditing(book)}
+                      size="sm"
+                      variant="outline"
+                    >
+                      Edit
+                    </Button>
                   </TableCell>
                 </TableRow>
               ))}
@@ -315,6 +334,22 @@ export function ReadBooksPage() {
           </Table>
         )}
       </section>
+      <BookSheet
+        book={editing}
+        onClose={() => setEditing(null)}
+        onRemove={() => {
+          if (editing) {
+            remove.mutate(editing.id);
+          }
+        }}
+        onSave={(patch) => {
+          if (editing) {
+            update.mutate({ id: editing.id, patch });
+          }
+        }}
+        open={editing !== null}
+        pending={update.isPending || remove.isPending}
+      />
     </div>
   );
 }

@@ -89,17 +89,44 @@ export class ReadSessionsRepository implements ReadSessionsStore {
       return null;
     }
 
-    const [book, candidates, readers] = await Promise.all([
+    const [book, candidates, readers, progress] = await Promise.all([
       row.bookId ? this.findBook(row.bookId) : Promise.resolve(null),
       this.listCandidates(id),
       this.listReaders(id),
+      this.listProgress(id),
     ]);
+    const reviews = book ? await this.listReviewsByBook(book.id) : [];
+    const progressByUser = new Map(
+      progress.map((item) => [item.userId, item] as const),
+    );
+    const reviewByUser = new Map(
+      reviews.map((item) => [item.userId, item] as const),
+    );
 
     return {
       ...(row as ReadSession),
       book,
       candidates,
-      readers,
+      readers: readers.map((reader) => {
+        const rowProgress = progressByUser.get(reader.userId);
+        const rowReview = reviewByUser.get(reader.userId);
+        return {
+          ...reader,
+          progress: rowProgress
+            ? {
+                percentage: rowProgress.percentage,
+                notes: rowProgress.notes,
+                isCompleted: rowProgress.isCompleted,
+                startedAt: rowProgress.startedAt,
+                completedAt: rowProgress.completedAt,
+                progressUpdatedAt: rowProgress.progressUpdatedAt,
+              }
+            : null,
+          review: rowReview
+            ? { rating: rowReview.rating, body: rowReview.body }
+            : null,
+        };
+      }),
     };
   }
 
@@ -280,6 +307,24 @@ export class ReadSessionsRepository implements ReadSessionsStore {
     return (row as ReadProgress | undefined) ?? null;
   }
 
+  async findProgressForBook(userId: string, bookId: string) {
+    const [row] = await db
+      .select(progressColumns)
+      .from(readProgress)
+      .innerJoin(readSession, eq(readSession.id, readProgress.sessionId))
+      .where(
+        and(
+          eq(readProgress.userId, userId),
+          eq(readSession.bookId, bookId),
+          inArray(readSession.status, ["active", "completed"]),
+        ),
+      )
+      .orderBy(desc(readSession.updatedAt))
+      .limit(1);
+
+    return (row as ReadProgress | undefined) ?? null;
+  }
+
   async findCompletedProgressForBook(userId: string, bookId: string) {
     const [row] = await db
       .select(progressColumns)
@@ -345,6 +390,17 @@ export class ReadSessionsRepository implements ReadSessionsStore {
     return rows.map((row) => toCandidate(row.candidate, row.coverId, row.slug));
   }
 
+  private async listReviewsByBook(bookId: string) {
+    return db
+      .select({
+        userId: readReview.userId,
+        rating: readReview.rating,
+        body: readReview.body,
+      })
+      .from(readReview)
+      .where(eq(readReview.bookId, bookId));
+  }
+
   private async listReaders(sessionId: string) {
     return (await db
       .select({
@@ -354,9 +410,9 @@ export class ReadSessionsRepository implements ReadSessionsStore {
       })
       .from(readSessionReader)
       .innerJoin(user, eq(user.id, readSessionReader.userId))
-      .where(
-        eq(readSessionReader.sessionId, sessionId),
-      )) as ReadSessionReader[];
+      .where(eq(readSessionReader.sessionId, sessionId))) as Array<
+      Omit<ReadSessionReader, "progress" | "review">
+    >;
   }
 }
 

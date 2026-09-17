@@ -18,6 +18,16 @@ export class ReadMembersService {
     return this.members.list();
   }
 
+  async listDirectory() {
+    const members = await this.members.list();
+    return members.map((member) => ({
+      name: member.user.name,
+      username: member.user.username,
+      image: member.user.image,
+      memberSince: member.createdAt,
+    }));
+  }
+
   async getProfile(username: string) {
     const profile = await this.members.findProfileByUsername(username);
     if (!profile) {

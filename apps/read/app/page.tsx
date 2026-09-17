@@ -10,11 +10,11 @@ import {
 import { format, parseISO } from "date-fns";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { BookCard } from "../components/book-card";
 import { BookCover } from "../components/book-cover";
 import { ProgressForm } from "../components/progress-form";
+import { ReviewForm } from "../components/review-form";
 import { readJson } from "../lib/read-api";
-import type { CurrentSession, ReadBook } from "../lib/read-types";
+import type { CurrentSession } from "../lib/read-types";
 import { requireReadMember } from "../lib/require-member";
 import { sessionStatusLabel } from "../lib/status";
 
@@ -25,11 +25,7 @@ export const metadata: Metadata = {
 
 export default async function Page() {
   await requireReadMember();
-  const [current, books] = await Promise.all([
-    readJson<CurrentSession>("/api/read/me/session"),
-    readJson<ReadBook[]>("/api/read/books"),
-  ]);
-  const catalog = books ?? [];
+  const current = await readJson<CurrentSession>("/api/read/me/session");
 
   return (
     <main className="flex flex-col gap-12">
@@ -49,30 +45,6 @@ export default async function Page() {
           </EmptyContent>
         </Empty>
       )}
-      <section className="flex flex-col gap-5">
-        <div className="flex items-end justify-between gap-4">
-          <h2 className="text-xl font-medium tracking-tight">Club books</h2>
-          {catalog.length > 10 ? (
-            <Link
-              className="text-sm text-muted-foreground underline"
-              href="/books"
-            >
-              See all
-            </Link>
-          ) : null}
-        </div>
-        {catalog.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            No books on the list yet.
-          </p>
-        ) : (
-          <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-            {catalog.slice(0, 10).map((book) => (
-              <BookCard book={book} key={book.id} />
-            ))}
-          </div>
-        )}
-      </section>
     </main>
   );
 }
@@ -161,20 +133,23 @@ function CurrentSessionHero({
           ) : null}
         </div>
         {book ? (
-          <div>
+          <div className="flex flex-wrap gap-2">
             <Button
               render={<Link href={`/books/${book.slug}`} />}
               variant="outline"
             >
               Open book
             </Button>
+            {current.canReview ? <ReviewForm bookId={book.id} /> : null}
           </div>
         ) : null}
-        {session.status === "active" ? (
+        {session.status === "active" && !progress?.isCompleted ? (
           <ProgressForm
             initialNotes={progress?.notes ?? null}
             initialPercentage={progress?.percentage ?? 0}
           />
+        ) : progress?.isCompleted ? (
+          <p className="text-sm text-muted-foreground">Finished</p>
         ) : null}
       </div>
     </section>

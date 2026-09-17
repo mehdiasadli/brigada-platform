@@ -7,6 +7,7 @@ import {
   AlertTitle,
 } from "@brigada/ui/components/alert";
 import { Button } from "@brigada/ui/components/button";
+import { ConfirmDialog } from "@brigada/ui/components/confirm-dialog";
 import {
   Empty,
   EmptyDescription,
@@ -25,6 +26,7 @@ import {
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format, parseISO } from "date-fns";
 import { CircleAlertIcon } from "lucide-react";
+import { useState } from "react";
 import { ActionError, firstError } from "../../../../components/action-error";
 import {
   adminUsersQueryKey,
@@ -39,6 +41,11 @@ import {
 
 export function ReadMembersPage() {
   const queryClient = useQueryClient();
+  const [confirm, setConfirm] = useState<
+    | { kind: "grant"; userId: string; name: string }
+    | { kind: "revoke"; userId: string; name: string }
+    | null
+  >(null);
   const members = useQuery({
     queryKey: readMembersQueryKey(),
     queryFn: listReadMembers,
@@ -120,7 +127,13 @@ export function ReadMembersPage() {
                   <TableCell className="text-right">
                     <Button
                       disabled={revoke.isPending}
-                      onClick={() => revoke.mutate(member.user.id)}
+                      onClick={() =>
+                        setConfirm({
+                          kind: "revoke",
+                          userId: member.user.id,
+                          name: member.user.name,
+                        })
+                      }
                       size="sm"
                       variant="outline"
                     >
@@ -167,7 +180,13 @@ export function ReadMembersPage() {
                   <TableCell className="text-right">
                     <Button
                       disabled={grant.isPending}
-                      onClick={() => grant.mutate(user.id)}
+                      onClick={() =>
+                        setConfirm({
+                          kind: "grant",
+                          userId: user.id,
+                          name: user.name,
+                        })
+                      }
                       size="sm"
                     >
                       Grant
@@ -179,6 +198,40 @@ export function ReadMembersPage() {
           </Table>
         )}
       </section>
+      <ConfirmDialog
+        confirmLabel={confirm?.kind === "revoke" ? "Revoke" : "Grant"}
+        description={
+          confirm?.kind === "revoke"
+            ? `Revoke reading club access for ${confirm.name}?`
+            : confirm
+              ? `Grant reading club access to ${confirm.name}?`
+              : "Confirm this membership change."
+        }
+        destructive={confirm?.kind === "revoke"}
+        onConfirm={() => {
+          if (!confirm) {
+            return;
+          }
+          if (confirm.kind === "grant") {
+            grant.mutate(confirm.userId);
+          } else {
+            revoke.mutate(confirm.userId);
+          }
+          setConfirm(null);
+        }}
+        onOpenChange={(next) => {
+          if (!next) {
+            setConfirm(null);
+          }
+        }}
+        open={confirm !== null}
+        pending={grant.isPending || revoke.isPending}
+        title={
+          confirm?.kind === "revoke"
+            ? "Revoke membership?"
+            : "Grant membership?"
+        }
+      />
     </div>
   );
 }

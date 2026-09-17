@@ -15,10 +15,26 @@ export type ReadSessionCandidate = {
   discordAnswerId: number | null;
 };
 
+export type ReadSessionReaderProgress = {
+  percentage: number;
+  notes: string | null;
+  isCompleted: boolean;
+  startedAt: Date | null;
+  completedAt: Date | null;
+  progressUpdatedAt: Date;
+};
+
+export type ReadSessionReaderReview = {
+  rating: number;
+  body: string | null;
+};
+
 export type ReadSessionReader = {
   userId: string;
   username: string;
   name: string;
+  progress: ReadSessionReaderProgress | null;
+  review: ReadSessionReaderReview | null;
 };
 
 export type ReadSession = {
@@ -124,6 +140,10 @@ export type ReadSessionsStore = {
       startedAt: Date | null;
       completedAt: Date | null;
     },
+  ): Promise<ReadProgress | null>;
+  findProgressForBook(
+    userId: string,
+    bookId: string,
   ): Promise<ReadProgress | null>;
   findCompletedProgressForBook(
     userId: string,

@@ -35,4 +35,31 @@ export type ReadProgress = {
 export type CurrentSession = {
   session: ReadSession;
   progress: ReadProgress | null;
+  canReview: boolean;
 } | null;
+
+export type CatalogPage = {
+  items: ReadBook[];
+  nextCursor: string | null;
+};
+
+export type BookPage = {
+  book: ReadBook;
+  reviews: Array<{
+    id: string;
+    username: string;
+    name: string;
+    body: string | null;
+    rating: number;
+  }>;
+  viewer: {
+    canReview: boolean;
+    canUpdateProgress: boolean;
+    review: { id: string; rating: number; body: string | null } | null;
+    progress: {
+      percentage: number;
+      notes: string | null;
+      isCompleted: boolean;
+    } | null;
+  };
+};
