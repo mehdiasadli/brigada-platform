@@ -40,6 +40,12 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             >
               Books
             </Link>
+            <Link
+              className="text-muted-foreground hover:text-foreground"
+              href="/members"
+            >
+              Members
+            </Link>
           </nav>
         </header>
         <Providers>

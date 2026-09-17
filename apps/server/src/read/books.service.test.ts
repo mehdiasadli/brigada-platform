@@ -33,11 +33,20 @@ const input = {
 function createStore(overrides: Record<string, ReturnType<typeof mock>> = {}) {
   return {
     list: mock(() => Promise.resolve([book])),
+    listVisible: mock(() => Promise.resolve([book])),
+    listCatalog: mock(() =>
+      Promise.resolve({ items: [book], nextCursor: null }),
+    ),
     findById: mock(() => Promise.resolve(book)),
+    findBySlug: mock(() => Promise.resolve(book)),
     findByOlibKey: mock(() => Promise.resolve(null)),
     listSlugs: mock(() => Promise.resolve(["other"])),
     insert: mock(() => Promise.resolve(book)),
     update: mock(() => Promise.resolve(book)),
+    listReviews: mock(() => Promise.resolve([])),
+    findReview: mock(() => Promise.resolve(null)),
+    hasCompletedBook: mock(() => Promise.resolve(false)),
+    findProgressForBook: mock(() => Promise.resolve(null)),
     ...overrides,
   };
 }
@@ -79,6 +88,54 @@ test("throws when a book is missing", async () => {
   );
 
   await expect(service.getById(book.id)).rejects.toBeInstanceOf(
+    NotFoundException,
+  );
+});
+
+test("reallocates the slug when the title changes", async () => {
+  const store = createStore({
+    update: mock(() =>
+      Promise.resolve({ ...book, title: "Dune", slug: "dune" }),
+    ),
+  });
+  const service = await createService(store);
+
+  await service.update(book.id, { title: "Dune" });
+  expect(store.update).toHaveBeenCalledWith(
+    book.id,
+    expect.objectContaining({ title: "Dune", slug: "dune" }),
+  );
+});
+
+test("lets a member review a club book they have not reviewed", async () => {
+  const store = createStore({
+    findBySlug: mock(() =>
+      Promise.resolve({ ...book, status: "reading" as const }),
+    ),
+  });
+  const service = await createService(store);
+
+  await expect(service.getBySlug(book.slug, book.id)).resolves.toMatchObject({
+    viewer: { canReview: true, review: null },
+  });
+});
+
+test("keeps reviews closed until the club starts the book", async () => {
+  const service = await createService(createStore());
+
+  await expect(service.getBySlug(book.slug, book.id)).resolves.toMatchObject({
+    viewer: { canReview: false, review: null },
+  });
+});
+
+test("hides a removed book from members", async () => {
+  const service = await createService(
+    createStore({
+      findBySlug: mock(() => Promise.resolve({ ...book, status: "removed" })),
+    }),
+  );
+
+  await expect(service.getBySlug(book.slug, book.id)).rejects.toBeInstanceOf(
     NotFoundException,
   );
 });

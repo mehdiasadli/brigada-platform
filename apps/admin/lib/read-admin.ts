@@ -36,10 +36,30 @@ export type ReadSession = {
   id: string;
   bookId: string | null;
   status: "not_started" | "voting" | "active" | "completed" | "cancelled";
+  votingStartedAt: string | null;
   votingDeadline: string | null;
+  votingEndedAt: string | null;
   startedAt: string | null;
+  completedAt: string | null;
+  cancelledAt: string | null;
   readingDeadline: string | null;
   createdAt: string;
+  updatedAt: string;
+};
+
+export type ReadSessionReader = {
+  userId: string;
+  username: string;
+  name: string;
+  progress: {
+    percentage: number;
+    notes: string | null;
+    isCompleted: boolean;
+    startedAt: string | null;
+    completedAt: string | null;
+    progressUpdatedAt: string;
+  } | null;
+  review: { rating: number; body: string | null } | null;
 };
 
 export type ReadSessionDetail = ReadSession & {
@@ -54,7 +74,7 @@ export type ReadSessionDetail = ReadSession & {
     coverId: number | null;
     slug: string | null;
   }>;
-  readers: Array<{ userId: string; username: string; name: string }>;
+  readers: ReadSessionReader[];
 };
 
 async function readAdminFetch<T>(path: string, init?: RequestInit): Promise<T> {
@@ -129,7 +149,18 @@ export function createReadBook(input: {
 
 export function updateReadBook(
   id: string,
-  patch: Partial<Pick<ReadBook, "title" | "author" | "pageCount" | "status">>,
+  patch: Partial<
+    Pick<
+      ReadBook,
+      | "title"
+      | "author"
+      | "pageCount"
+      | "firstPublishYear"
+      | "subtitle"
+      | "description"
+      | "status"
+    >
+  >,
 ) {
   return readAdminFetch<ReadBook>(`/api/admin/read/books/${id}`, {
     method: "PATCH",
@@ -201,5 +232,16 @@ export function removeReadReader(sessionId: string, userId: string) {
   return readAdminFetch<ReadSessionDetail>(
     `/api/admin/read/sessions/${sessionId}/readers/${userId}`,
     { method: "DELETE" },
+  );
+}
+
+export function setReadReaderProgress(
+  sessionId: string,
+  userId: string,
+  input: { percentage: number; notes?: string | null },
+) {
+  return readAdminFetch<ReadSessionDetail>(
+    `/api/admin/read/sessions/${sessionId}/readers/${userId}/progress`,
+    { method: "PATCH", body: JSON.stringify(input) },
   );
 }

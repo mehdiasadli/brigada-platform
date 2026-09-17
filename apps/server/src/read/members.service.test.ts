@@ -54,6 +54,19 @@ test("lists members", async () => {
   await expect(service.list()).resolves.toEqual([member]);
 });
 
+test("lists a public member directory without emails", async () => {
+  const service = await createService(createStore());
+
+  await expect(service.listDirectory()).resolves.toEqual([
+    {
+      name: "Ada",
+      username: "ada",
+      image: null,
+      memberSince: member.createdAt,
+    },
+  ]);
+});
+
 test("grants membership to an existing user", async () => {
   const store = createStore();
   const service = await createService(store);

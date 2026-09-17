@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from "@nestjs/common";
 import type {
+  CatalogListQuery,
   CreateReadBook,
   ReadBooksStore,
   UpdateReadBook,
@@ -28,14 +29,46 @@ export class ReadBooksService {
     return this.books.listVisible();
   }
 
-  async getBySlug(slug: string) {
+  listCatalog(query: CatalogListQuery) {
+    return this.books.listCatalog(query);
+  }
+
+  async getBySlug(slug: string, userId?: string) {
     const book = await this.books.findBySlug(slug);
-    if (!book) {
+    if (!book || book.status === "removed") {
       throw new NotFoundException("Book not found");
     }
 
     const reviews = await this.books.listReviews(book.id);
-    return { book, reviews };
+    if (!userId) {
+      return {
+        book,
+        reviews,
+        viewer: {
+          canReview: false,
+          canUpdateProgress: false,
+          review: null,
+          progress: null,
+        },
+      };
+    }
+
+    const [review, progress] = await Promise.all([
+      this.books.findReview(userId, book.id),
+      this.books.findProgressForBook(userId, book.id),
+    ]);
+
+    return {
+      book,
+      reviews,
+      viewer: {
+        canReview:
+          !review && (book.status === "reading" || book.status === "completed"),
+        canUpdateProgress: Boolean(progress) && !progress.isCompleted,
+        review,
+        progress,
+      },
+    };
   }
 
   async getById(id: string) {
@@ -65,7 +98,19 @@ export class ReadBooksService {
   }
 
   async update(id: string, patch: UpdateReadBook) {
-    const updated = await this.books.update(id, patch);
+    const current = await this.books.findById(id);
+    if (!current) {
+      throw new NotFoundException("Book not found");
+    }
+
+    const next = { ...patch };
+    if (patch.title && patch.title !== current.title) {
+      const taken = new Set(await this.books.listSlugs());
+      taken.delete(current.slug);
+      next.slug = uniquifySlug(slugifyTitle(patch.title), taken);
+    }
+
+    const updated = await this.books.update(id, next);
     if (!updated) {
       throw new NotFoundException("Book not found");
     }

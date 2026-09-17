@@ -1,25 +1,16 @@
 import { Badge } from "@brigada/ui/components/badge";
 import { Separator } from "@brigada/ui/components/separator";
+import { StarRating } from "@brigada/ui/components/star-rating";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { BookCover } from "../../../components/book-cover";
+import { ProgressForm } from "../../../components/progress-form";
 import { ReviewForm } from "../../../components/review-form";
 import { readJson } from "../../../lib/read-api";
-import type { CurrentSession, ReadBook } from "../../../lib/read-types";
+import type { BookPage } from "../../../lib/read-types";
 import { requireReadMember } from "../../../lib/require-member";
 import { bookStatusLabel, bookStatusVariant } from "../../../lib/status";
-
-type BookPage = {
-  book: ReadBook;
-  reviews: Array<{
-    id: string;
-    username: string;
-    name: string;
-    body: string | null;
-    rating: number;
-  }>;
-};
 
 export async function generateMetadata({
   params,
@@ -47,23 +38,24 @@ function formatRating(rating: number) {
 
 export default async function Page({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<{ review?: string }>;
 }) {
   await requireReadMember();
   const { slug } = await params;
-  const [data, current] = await Promise.all([
-    readJson<BookPage>(`/api/read/books/${slug}`),
-    readJson<CurrentSession>("/api/read/me/session"),
-  ]);
+  const { review: reviewQuery } = await searchParams;
+  const data = await readJson<BookPage>(`/api/read/books/${slug}`);
   if (!data) {
     notFound();
   }
 
-  const canReview =
-    current?.session.book?.id === data.book.id &&
-    Boolean(current.progress?.isCompleted);
-  const { book, reviews } = data;
+  const { book, reviews, viewer } = data;
+  const canReview = viewer?.canReview ?? false;
+  const canUpdateProgress = viewer?.canUpdateProgress ?? false;
+  const ownReview = viewer?.review ?? null;
+  const ownProgress = viewer?.progress ?? null;
   const average =
     reviews.length === 0
       ? null
@@ -113,6 +105,18 @@ export default async function Page({
               {book.description}
             </p>
           ) : null}
+          {canUpdateProgress ? (
+            <ProgressForm
+              bookId={book.id}
+              initialNotes={ownProgress?.notes ?? null}
+              initialPercentage={ownProgress?.percentage ?? 0}
+            />
+          ) : ownProgress?.isCompleted ? (
+            <p className="text-sm text-muted-foreground">Finished</p>
+          ) : null}
+          {canReview ? (
+            <ReviewForm bookId={book.id} defaultOpen={reviewQuery === "1"} />
+          ) : null}
         </div>
       </section>
       <section className="flex max-w-prose flex-col gap-5">
@@ -120,8 +124,12 @@ export default async function Page({
         {reviews.length === 0 ? (
           <p className="text-sm text-muted-foreground">
             {canReview
-              ? "No reviews yet."
-              : "No reviews yet. Finish the book to write one."}
+              ? "Be the first to review this book."
+              : ownReview
+                ? "Your review is published below."
+                : book.status === "readlist"
+                  ? "Reviews open once the club starts this book."
+                  : "No reviews yet."}
           </p>
         ) : (
           <ul className="flex flex-col">
@@ -129,16 +137,19 @@ export default async function Page({
               <li key={review.id}>
                 {index > 0 ? <Separator className="my-5" /> : null}
                 <article className="flex flex-col gap-1.5">
-                  <div className="flex items-baseline justify-between gap-3">
+                  <div className="flex items-center justify-between gap-3">
                     <Link
                       className="font-medium hover:underline"
                       href={`/members/${review.username}`}
                     >
                       {review.name}
                     </Link>
-                    <p className="text-sm text-muted-foreground">
-                      {formatRating(review.rating)}
-                    </p>
+                    <div className="flex items-center gap-2">
+                      <StarRating value={review.rating} />
+                      <p className="text-sm text-muted-foreground">
+                        {formatRating(review.rating)}
+                      </p>
+                    </div>
                   </div>
                   {review.body ? (
                     <p className="text-sm leading-relaxed">{review.body}</p>
@@ -148,7 +159,6 @@ export default async function Page({
             ))}
           </ul>
         )}
-        {canReview ? <ReviewForm bookId={book.id} /> : null}
       </section>
     </main>
   );

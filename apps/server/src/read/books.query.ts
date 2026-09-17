@@ -1,6 +1,7 @@
 import { READ_BOOK_STATUS_VALUES } from "@brigada/db/schema";
 import { z } from "@brigada/env";
 import { BadRequestException } from "@nestjs/common";
+import { CATALOG_SORT_FIELDS, decodeCatalogCursor } from "./books.catalog";
 
 export const readBookIdSchema = z.uuid();
 
@@ -60,4 +61,37 @@ export function parseUpdateReadBook(input: unknown) {
   }
 
   return parsed.data;
+}
+
+const visibleBookStatus = z.enum(["readlist", "reading", "completed"]);
+
+export const catalogQuerySchema = z.object({
+  q: z.string().trim().max(200).optional(),
+  status: visibleBookStatus.optional(),
+  minYear: z.coerce.number().int().min(1000).max(2100).optional(),
+  maxYear: z.coerce.number().int().min(1000).max(2100).optional(),
+  minPages: z.coerce.number().int().min(1).max(20_000).optional(),
+  maxPages: z.coerce.number().int().min(1).max(20_000).optional(),
+  sort: z.enum(CATALOG_SORT_FIELDS).default("createdAt"),
+  order: z.enum(["asc", "desc"]).default("desc"),
+  cursor: z.string().trim().min(1).optional(),
+  limit: z.coerce.number().int().min(1).max(50).default(20),
+});
+
+export function parseCatalogQuery(input: unknown) {
+  const parsed = catalogQuerySchema.safeParse(input);
+  if (!parsed.success) {
+    throw new BadRequestException("Invalid book catalog query");
+  }
+
+  let cursor: ReturnType<typeof decodeCatalogCursor> | undefined;
+  if (parsed.data.cursor) {
+    try {
+      cursor = decodeCatalogCursor(parsed.data.cursor);
+    } catch {
+      throw new BadRequestException("Invalid book catalog cursor");
+    }
+  }
+
+  return { ...parsed.data, q: parsed.data.q || undefined, cursor };
 }

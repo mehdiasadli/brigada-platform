@@ -23,6 +23,7 @@ import {
   readSessionsQueryKey,
   removeReadReader,
   resolveReadVote,
+  setReadReaderProgress,
   setReadSlate,
   startReadVoting,
   suggestReadBooks,
@@ -110,6 +111,16 @@ export function ReadSessionsPage() {
     mutationFn: (userId: string) => removeReadReader(selectedId ?? "", userId),
     onSuccess: invalidate,
   });
+  const updateProgress = useMutation({
+    mutationFn: ({
+      userId,
+      input,
+    }: {
+      userId: string;
+      input: { percentage: number; notes: string | null };
+    }) => setReadReaderProgress(selectedId ?? "", userId, input),
+    onSuccess: invalidate,
+  });
 
   const pending =
     saveSlate.isPending ||
@@ -117,7 +128,8 @@ export function ReadSessionsPage() {
     resolve.isPending ||
     cancel.isPending ||
     complete.isPending ||
-    removeReader.isPending;
+    removeReader.isPending ||
+    updateProgress.isPending;
 
   return (
     <div className="flex flex-col gap-6">
@@ -144,6 +156,7 @@ export function ReadSessionsPage() {
           cancel.error,
           complete.error,
           removeReader.error,
+          updateProgress.error,
         )}
       />
       {(sessions.data ?? []).length === 0 ? (
@@ -197,6 +210,9 @@ export function ReadSessionsPage() {
           );
         }}
         onStartVoting={() => start.mutate()}
+        onUpdateProgress={(userId, input) =>
+          updateProgress.mutate({ userId, input })
+        }
         open={selectedId !== null}
         pending={pending}
         session={detail.data}

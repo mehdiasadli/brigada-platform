@@ -60,7 +60,9 @@ function session(
     updatedAt: new Date("2026-01-01"),
     book: null,
     candidates: [candidate, { ...candidate, id: "c2", bookId: otherBookId }],
-    readers: [{ userId, username: "ada", name: "Ada" }],
+    readers: [
+      { userId, username: "ada", name: "Ada", progress: null, review: null },
+    ],
     ...overrides,
   };
 }
@@ -101,6 +103,7 @@ function createStore(
         progressUpdatedAt: new Date(),
       }),
     ),
+    findProgressForBook: mock(() => Promise.resolve(null)),
     findCompletedProgressForBook: mock(() => Promise.resolve(null)),
     insertReview: mock(() =>
       Promise.resolve({
@@ -193,6 +196,100 @@ test("rejects resolving without a winner", async () => {
   await expect(service.resolveVoting(sessionId, {})).rejects.toBeInstanceOf(
     BadRequestException,
   );
+});
+
+test("rejects a finished book on the slate", async () => {
+  const service = await createService(
+    createStore(session(), {
+      findBooksByIds: mock(() =>
+        Promise.resolve([
+          { ...book, status: "completed" as const },
+          { ...book, id: otherBookId },
+        ]),
+      ),
+    }),
+  );
+
+  await expect(
+    service.setSlate(sessionId, [bookId, otherBookId]),
+  ).rejects.toBeInstanceOf(BadRequestException);
+});
+
+test("lets an admin correct reader progress", async () => {
+  const store = createStore(session({ status: "active", bookId }));
+  const service = await createService(store);
+
+  await service.setReaderProgress(sessionId, userId, {
+    percentage: 40,
+    notes: "chapter 4",
+  });
+
+  expect(store.updateProgress).toHaveBeenCalledWith(
+    sessionId,
+    userId,
+    expect.objectContaining({
+      percentage: 40,
+      notes: "chapter 4",
+      isCompleted: false,
+    }),
+  );
+});
+
+test("lets a reader finish after the session ended", async () => {
+  const progress = {
+    id: "p1",
+    sessionId,
+    userId,
+    percentage: 40,
+    notes: null,
+    isCompleted: false,
+    startedAt: new Date("2026-09-01"),
+    completedAt: null,
+    progressUpdatedAt: new Date("2026-09-01"),
+  };
+  const store = createStore(
+    session({
+      status: "completed",
+      bookId,
+      book: { ...book, status: "completed" },
+    }),
+    { findProgressForBook: mock(() => Promise.resolve(progress)) },
+  );
+  const service = await createService(store);
+
+  await service.setProgress(userId, { bookId, percentage: 100 });
+
+  expect(store.updateProgress).toHaveBeenCalledWith(
+    sessionId,
+    userId,
+    expect.objectContaining({
+      percentage: 100,
+      isCompleted: true,
+    }),
+  );
+});
+
+test("rejects progress without a book after the session ended", async () => {
+  const service = await createService(
+    createStore(session({ status: "completed", bookId })),
+  );
+
+  await expect(
+    service.setProgress(userId, { percentage: 100 }),
+  ).rejects.toBeInstanceOf(ConflictException);
+});
+
+test("accepts a review once the club has started the book", async () => {
+  const store = createStore(session({ status: "active", bookId }), {
+    findBooksByIds: mock(() =>
+      Promise.resolve([{ ...book, status: "reading" as const }]),
+    ),
+  });
+  const service = await createService(store);
+
+  await expect(
+    service.createReview(userId, { bookId, rating: 8 }),
+  ).resolves.toMatchObject({ rating: 8 });
 });
 
 test("completes when every reader is done", async () => {

@@ -5,6 +5,7 @@ import {
   Get,
   Inject,
   Param,
+  Patch,
   Post,
   Put,
   UseGuards,
@@ -12,6 +13,7 @@ import {
 import { AdminGuard } from "../users/admin.guard";
 import { parseReadMemberUserId } from "./members.query";
 import {
+  parseProgress,
   parseReadSessionId,
   parseResolveVote,
   parseSlate,
@@ -81,6 +83,19 @@ export class ReadSessionsController {
     return this.sessions.removeReader(
       parseReadSessionId(id),
       parseReadMemberUserId(userId),
+    );
+  }
+
+  @Patch(":id/readers/:userId/progress")
+  setReaderProgress(
+    @Param("id") id: string,
+    @Param("userId") userId: string,
+    @Body() body: unknown,
+  ) {
+    return this.sessions.setReaderProgress(
+      parseReadSessionId(id),
+      parseReadMemberUserId(userId),
+      parseProgress(body),
     );
   }
 }

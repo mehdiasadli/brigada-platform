@@ -1,13 +1,5 @@
-import {
-  Empty,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyTitle,
-} from "@brigada/ui/components/empty";
 import type { Metadata } from "next";
-import { BookCard } from "../../components/book-card";
-import { readJson } from "../../lib/read-api";
-import type { ReadBook } from "../../lib/read-types";
+import { BooksCatalog } from "../../components/books-catalog";
 import { requireReadMember } from "../../lib/require-member";
 
 export const metadata: Metadata = {
@@ -17,7 +9,6 @@ export const metadata: Metadata = {
 
 export default async function Page() {
   await requireReadMember();
-  const books = (await readJson<ReadBook[]>("/api/read/books")) ?? [];
 
   return (
     <main className="flex flex-col gap-8">
@@ -29,22 +20,7 @@ export default async function Page() {
           Everything the club has nominated, is reading, or has finished.
         </p>
       </div>
-      {books.length === 0 ? (
-        <Empty className="border">
-          <EmptyHeader>
-            <EmptyTitle>No books yet</EmptyTitle>
-            <EmptyDescription>
-              An admin can add books from OpenLibrary.
-            </EmptyDescription>
-          </EmptyHeader>
-        </Empty>
-      ) : (
-        <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-          {books.map((book) => (
-            <BookCard book={book} key={book.id} />
-          ))}
-        </div>
-      )}
+      <BooksCatalog />
     </main>
   );
 }
