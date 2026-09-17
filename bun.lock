@@ -59,6 +59,28 @@
         "typescript": "catalog:",
       },
     },
+    "apps/www": {
+      "name": "@brigada/www",
+      "version": "0.0.0",
+      "dependencies": {
+        "@brigada/auth": "workspace:*",
+        "@brigada/env": "workspace:*",
+        "@brigada/ui": "workspace:*",
+        "next": "16.3.3",
+        "react": "catalog:",
+        "react-dom": "catalog:",
+      },
+      "devDependencies": {
+        "@brigada/typescript-config": "workspace:*",
+        "@tailwindcss/postcss": "^4.3.3",
+        "@types/bun": "catalog:",
+        "@types/node": "^24.5.2",
+        "@types/react": "^19",
+        "@types/react-dom": "^19",
+        "tailwindcss": "^4.3.3",
+        "typescript": "catalog:",
+      },
+    },
     "packages/auth": {
       "name": "@brigada/auth",
       "version": "0.0.0",
@@ -261,6 +283,8 @@
     "@brigada/typescript-config": ["@brigada/typescript-config@workspace:packages/typescript-config"],
 
     "@brigada/ui": ["@brigada/ui@workspace:packages/ui"],
+
+    "@brigada/www": ["@brigada/www@workspace:apps/www"],
 
     "@commitlint/cli": ["@commitlint/cli@21.2.2", "", { "dependencies": { "@commitlint/config-conventional": "^21.2.2", "@commitlint/format": "^21.2.2", "@commitlint/lint": "^21.2.2", "@commitlint/load": "^21.2.2", "@commitlint/read": "^21.2.1", "@commitlint/types": "^21.2.0", "tinyexec": "^1.0.0", "yargs": "^18.0.0" }, "bin": { "commitlint": "cli.js" } }, "sha512-a+6hQxIxnpdvSvS2apvttPNbEliYsVC3PqFYDiiB2kjbwIsQsj1urvQ4Tkf70pKYozPalKAuRQmm/GHwndduqA=="],
 
