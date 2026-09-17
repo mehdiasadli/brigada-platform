@@ -1,18 +1,13 @@
 import { expect, test } from "bun:test";
-import { parseUsersPageQuery, usersHref } from "./users-query";
+import { serializeUsersSearch } from "./users-query";
 
-test("defaults missing search params", () => {
-  expect(parseUsersPageQuery({})).toEqual({
-    page: 1,
-    limit: 20,
-    sort: "createdAt",
-    order: "desc",
-  });
+test("omits default search params", () => {
+  expect(serializeUsersSearch("/users", {})).toBe("/users");
 });
 
 test("keeps a selected user in the href", () => {
   expect(
-    usersHref({
+    serializeUsersSearch("/users", {
       page: 2,
       limit: 10,
       sort: "username",

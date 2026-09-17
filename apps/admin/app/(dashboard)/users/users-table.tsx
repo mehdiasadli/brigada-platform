@@ -2,51 +2,60 @@
 
 import { Badge } from "@brigada/ui/components/badge";
 import { DataTable } from "@brigada/ui/components/data-table";
-import { useRouter } from "next/navigation";
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@brigada/ui/components/empty";
+import { format, parseISO } from "date-fns";
+import { UsersIcon } from "lucide-react";
 import type { AdminUser } from "../../../lib/admin-users";
-import { type UsersPageQuery, usersHref } from "../../../lib/users-query";
-
-function sortHref(query: UsersPageQuery, sort: UsersPageQuery["sort"]) {
-  const order = query.sort === sort && query.order === "desc" ? "asc" : "desc";
-
-  return usersHref({ ...query, sort, order, page: 1 });
-}
-
-function formatDate(value: string) {
-  return new Intl.DateTimeFormat("en", {
-    dateStyle: "medium",
-  }).format(new Date(value));
-}
+import type { UserSortField } from "../../../lib/users-query";
 
 export function UsersTable({
   users,
-  query,
+  page,
+  pageCount,
+  limit,
+  sort,
+  order,
+  selectedId,
+  loading,
+  onSort,
+  onPageChange,
+  onLimitChange,
+  onRowClick,
 }: {
-  users: {
-    items: AdminUser[];
-    page: number;
-    limit: number;
-    totalPages: number;
-  };
-  query: UsersPageQuery;
+  users: AdminUser[];
+  page: number;
+  pageCount: number;
+  limit: number;
+  sort: UserSortField;
+  order: "asc" | "desc";
+  selectedId?: string;
+  loading: boolean;
+  onSort: (field: UserSortField) => void;
+  onPageChange: (page: number) => void;
+  onLimitChange: (limit: number) => void;
+  onRowClick: (user: AdminUser) => void;
 }) {
-  const router = useRouter();
-
   return (
     <DataTable
       columns={[
         {
           id: "username",
           header: "Username",
-          sortHref: sortHref(query, "username"),
-          sortDirection: query.sort === "username" ? query.order : undefined,
+          sortable: true,
+          sortDirection: sort === "username" ? order : undefined,
           cell: (user) => `@${user.username}`,
         },
         {
           id: "name",
           header: "Name",
-          sortHref: sortHref(query, "name"),
-          sortDirection: query.sort === "name" ? query.order : undefined,
+          sortable: true,
+          sortDirection: sort === "name" ? order : undefined,
           cell: (user) => user.name,
         },
         {
@@ -57,19 +66,35 @@ export function UsersTable({
         {
           id: "createdAt",
           header: "Created",
-          sortHref: sortHref(query, "createdAt"),
-          sortDirection: query.sort === "createdAt" ? query.order : undefined,
-          cell: (user) => formatDate(user.createdAt),
+          sortable: true,
+          sortDirection: sort === "createdAt" ? order : undefined,
+          cell: (user) => format(parseISO(user.createdAt), "MMM d, yyyy"),
         },
       ]}
-      data={users.items}
-      getLimitHref={(limit) => usersHref({ ...query, limit, page: 1 })}
-      getPageHref={(page) => usersHref({ ...query, page })}
+      data={users}
+      empty={
+        <Empty>
+          <EmptyHeader>
+            <EmptyMedia variant="icon">
+              <UsersIcon />
+            </EmptyMedia>
+            <EmptyTitle>No users yet</EmptyTitle>
+            <EmptyDescription>
+              Accounts appear here after someone signs in.
+            </EmptyDescription>
+          </EmptyHeader>
+        </Empty>
+      }
       getRowKey={(user) => user.id}
-      onRowClick={(user) => router.push(usersHref({ ...query, user: user.id }))}
-      limit={users.limit}
-      page={users.page}
-      pageCount={users.totalPages}
+      limit={limit}
+      loading={loading}
+      onLimitChange={onLimitChange}
+      onPageChange={onPageChange}
+      onRowClick={onRowClick}
+      onSort={(columnId) => onSort(columnId as UserSortField)}
+      page={page}
+      pageCount={pageCount}
+      selectedKey={selectedId}
     />
   );
 }

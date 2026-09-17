@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import type { ReactNode } from "react";
 import "@brigada/ui/globals.css";
 import { env } from "../env";
+import { Providers } from "./providers";
 
 const fontSans = Geist({
   subsets: ["latin"],
@@ -26,7 +27,9 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en" className={`${fontSans.variable} ${fontMono.variable}`}>
-      <body className="min-h-svh font-sans antialiased">{children}</body>
+      <body className="min-h-svh font-sans antialiased">
+        <Providers>{children}</Providers>
+      </body>
     </html>
   );
 }

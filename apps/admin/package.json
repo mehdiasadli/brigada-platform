@@ -14,8 +14,11 @@
     "@brigada/auth": "workspace:*",
     "@brigada/env": "workspace:*",
     "@brigada/ui": "workspace:*",
+    "@tanstack/react-query": "^5.103.1",
+    "date-fns": "^4.4.0",
     "lucide-react": "^1.46.0",
     "next": "16.3.3",
+    "nuqs": "^2.10.1",
     "react": "catalog:",
     "react-dom": "catalog:"
   },

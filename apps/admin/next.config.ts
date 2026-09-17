@@ -19,7 +19,12 @@ const nextConfig: NextConfig = {
     ];
   },
   experimental: {
-    optimizePackageImports: ["lucide-react"],
+    optimizePackageImports: [
+      "lucide-react",
+      "date-fns",
+      "nuqs",
+      "@tanstack/react-query",
+    ],
   },
 };
 

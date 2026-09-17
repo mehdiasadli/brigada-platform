@@ -1,6 +1,3 @@
-import { headers } from "next/headers";
-import { env } from "../env";
-
 export type AdminUser = {
   id: string;
   name: string;
@@ -32,18 +29,15 @@ export type AdminUserListQuery = {
   order?: "asc" | "desc";
 };
 
-async function adminFetch(path: string): Promise<Response> {
-  const cookie = (await headers()).get("cookie");
-
-  return fetch(`${env.NEXT_PUBLIC_BETTER_AUTH_URL}${path}`, {
-    headers: cookie ? { cookie } : undefined,
-    cache: "no-store",
-  });
+export function adminUsersQueryKey(query: AdminUserListQuery = {}) {
+  return ["admin-users", query] as const;
 }
 
-export async function listAdminUsers(
-  query: AdminUserListQuery = {},
-): Promise<AdminUserList> {
+export function adminUserQueryKey(id: string) {
+  return ["admin-user", id] as const;
+}
+
+export function adminUsersPath(query: AdminUserListQuery = {}): string {
   const params = new URLSearchParams();
   if (query.page) {
     params.set("page", String(query.page));
@@ -59,9 +53,20 @@ export async function listAdminUsers(
   }
 
   const search = params.toString();
-  const response = await adminFetch(
-    `/api/admin/users${search ? `?${search}` : ""}`,
-  );
+  return `/api/admin/users${search ? `?${search}` : ""}`;
+}
+
+async function adminFetch(path: string): Promise<Response> {
+  return fetch(path, {
+    credentials: "include",
+    cache: "no-store",
+  });
+}
+
+export async function listAdminUsers(
+  query: AdminUserListQuery = {},
+): Promise<AdminUserList> {
+  const response = await adminFetch(adminUsersPath(query));
 
   if (!response.ok) {
     throw new Error("Failed to load users");

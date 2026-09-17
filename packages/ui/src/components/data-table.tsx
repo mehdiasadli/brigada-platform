@@ -1,13 +1,7 @@
 "use client";
 
 import { Button } from "@brigada/ui/components/button";
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationNext,
-  PaginationPrevious,
-} from "@brigada/ui/components/pagination";
+import { Skeleton } from "@brigada/ui/components/skeleton";
 import {
   Table,
   TableBody,
@@ -16,13 +10,24 @@ import {
   TableHeader,
   TableRow,
 } from "@brigada/ui/components/table";
-import type { ReactNode } from "react";
+import {
+  ToggleGroup,
+  ToggleGroupItem,
+} from "@brigada/ui/components/toggle-group";
+import { cn } from "cn";
+import {
+  ArrowDownIcon,
+  ArrowUpIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+} from "lucide-react";
+import type { KeyboardEvent, ReactNode } from "react";
 
 export type DataTableColumn<T> = {
   id: string;
   header: string;
   cell: (row: T) => ReactNode;
-  sortHref?: string;
+  sortable?: boolean;
   sortDirection?: "asc" | "desc";
 };
 
@@ -31,26 +36,45 @@ export function DataTable<T>({
   data,
   getRowKey,
   onRowClick,
+  selectedKey,
   empty,
+  loading = false,
   page,
   pageCount,
-  getPageHref,
+  onPageChange,
   limit,
   limitOptions = [10, 20, 50],
-  getLimitHref,
+  onLimitChange,
+  onSort,
 }: {
   columns: DataTableColumn<T>[];
   data: T[];
   getRowKey: (row: T) => string;
   onRowClick?: (row: T) => void;
+  selectedKey?: string;
   empty?: ReactNode;
+  loading?: boolean;
   page: number;
   pageCount: number;
-  getPageHref: (page: number) => string;
+  onPageChange: (page: number) => void;
   limit: number;
   limitOptions?: number[];
-  getLimitHref: (limit: number) => string;
+  onLimitChange: (limit: number) => void;
+  onSort?: (columnId: string) => void;
 }) {
+  const skeletonRows = Math.min(limit, 8);
+
+  function handleRowKeyDown(event: KeyboardEvent<HTMLTableRowElement>, row: T) {
+    if (!onRowClick) {
+      return;
+    }
+
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      onRowClick(row);
+    }
+  }
+
   return (
     <div className="flex flex-col gap-4">
       <Table>
@@ -58,15 +82,20 @@ export function DataTable<T>({
           <TableRow>
             {columns.map((column) => (
               <TableHead key={column.id}>
-                {column.sortHref ? (
-                  <a className="hover:underline" href={column.sortHref}>
+                {column.sortable && onSort ? (
+                  <Button
+                    onClick={() => onSort(column.id)}
+                    size="sm"
+                    variant="ghost"
+                  >
                     {column.header}
-                    {column.sortDirection ? (
-                      <span className="text-muted-foreground">
-                        {column.sortDirection === "asc" ? " ↑" : " ↓"}
-                      </span>
+                    {column.sortDirection === "asc" ? (
+                      <ArrowUpIcon data-icon="inline-end" />
                     ) : null}
-                  </a>
+                    {column.sortDirection === "desc" ? (
+                      <ArrowDownIcon data-icon="inline-end" />
+                    ) : null}
+                  </Button>
                 ) : (
                   column.header
                 )}
@@ -75,21 +104,43 @@ export function DataTable<T>({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {data.length > 0 ? (
-            data.map((row) => (
-              <TableRow
-                key={getRowKey(row)}
-                className={onRowClick ? "cursor-pointer" : undefined}
-                onClick={onRowClick ? () => onRowClick(row) : undefined}
-              >
+          {loading && data.length === 0 ? (
+            Array.from({ length: skeletonRows }, (_, rowIndex) => (
+              <TableRow key={`skeleton-${rowIndex}`}>
                 {columns.map((column) => (
-                  <TableCell key={column.id}>{column.cell(row)}</TableCell>
+                  <TableCell key={column.id}>
+                    <Skeleton className="h-4 w-24" />
+                  </TableCell>
                 ))}
               </TableRow>
             ))
+          ) : data.length > 0 ? (
+            data.map((row) => {
+              const key = getRowKey(row);
+              const selected = selectedKey === key;
+
+              return (
+                <TableRow
+                  key={key}
+                  className={cn(onRowClick ? "cursor-pointer" : undefined)}
+                  data-state={selected ? "selected" : undefined}
+                  onClick={onRowClick ? () => onRowClick(row) : undefined}
+                  onKeyDown={
+                    onRowClick
+                      ? (event) => handleRowKeyDown(event, row)
+                      : undefined
+                  }
+                  tabIndex={onRowClick ? 0 : undefined}
+                >
+                  {columns.map((column) => (
+                    <TableCell key={column.id}>{column.cell(row)}</TableCell>
+                  ))}
+                </TableRow>
+              );
+            })
           ) : (
             <TableRow>
-              <TableCell className="h-24 text-center" colSpan={columns.length}>
+              <TableCell className="h-32" colSpan={columns.length}>
                 {empty ?? "No results."}
               </TableCell>
             </TableRow>
@@ -97,40 +148,47 @@ export function DataTable<T>({
         </TableBody>
       </Table>
       <div className="flex flex-col items-center justify-between gap-3 sm:flex-row">
-        <div className="flex items-center gap-2">
+        <ToggleGroup
+          onValueChange={(next) => {
+            const selected = next[0];
+            if (selected) {
+              onLimitChange(Number(selected));
+            }
+          }}
+          size="sm"
+          spacing={0}
+          value={[String(limit)]}
+          variant="outline"
+        >
           {limitOptions.map((option) => (
-            <Button
-              key={option}
-              nativeButton={false}
-              render={<a href={getLimitHref(option)} />}
-              size="sm"
-              variant={option === limit ? "outline" : "ghost"}
-            >
+            <ToggleGroupItem key={option} value={String(option)}>
               {option}
-            </Button>
+            </ToggleGroupItem>
           ))}
+        </ToggleGroup>
+        <div className="flex items-center gap-2">
+          <Button
+            disabled={page <= 1}
+            onClick={() => onPageChange(page - 1)}
+            size="sm"
+            variant="ghost"
+          >
+            <ChevronLeftIcon data-icon="inline-start" />
+            Previous
+          </Button>
+          <span className="px-2 text-sm text-muted-foreground">
+            Page {page} of {pageCount}
+          </span>
+          <Button
+            disabled={page >= pageCount}
+            onClick={() => onPageChange(page + 1)}
+            size="sm"
+            variant="ghost"
+          >
+            Next
+            <ChevronRightIcon data-icon="inline-end" />
+          </Button>
         </div>
-        <Pagination className="mx-0 w-auto">
-          <PaginationContent>
-            <PaginationItem>
-              <PaginationPrevious
-                aria-disabled={page <= 1}
-                href={page > 1 ? getPageHref(page - 1) : undefined}
-              />
-            </PaginationItem>
-            <PaginationItem>
-              <span className="px-2 text-sm text-muted-foreground">
-                Page {page} of {pageCount}
-              </span>
-            </PaginationItem>
-            <PaginationItem>
-              <PaginationNext
-                aria-disabled={page >= pageCount}
-                href={page < pageCount ? getPageHref(page + 1) : undefined}
-              />
-            </PaginationItem>
-          </PaginationContent>
-        </Pagination>
       </div>
     </div>
   );

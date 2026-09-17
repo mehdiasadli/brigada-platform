@@ -14,19 +14,10 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@brigada/ui/components/sheet";
-import { useRouter } from "next/navigation";
-import type { AdminUser } from "../../../lib/admin-users";
-
-function formatDate(value: string | null) {
-  if (!value) {
-    return "—";
-  }
-
-  return new Intl.DateTimeFormat("en", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(new Date(value));
-}
+import { Skeleton } from "@brigada/ui/components/skeleton";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { format, parseISO } from "date-fns";
+import { adminUserQueryKey, getAdminUser } from "../../../lib/admin-users";
 
 function Field({ label, value }: { label: string; value: string }) {
   return (
@@ -37,31 +28,53 @@ function Field({ label, value }: { label: string; value: string }) {
   );
 }
 
+function formatDateTime(value: string | null) {
+  if (!value) {
+    return "None";
+  }
+
+  return format(parseISO(value), "MMM d, yyyy 'at' h:mm a");
+}
+
 export function UserSheet({
-  user,
-  closeHref,
+  userId,
+  onClose,
 }: {
-  user: AdminUser | null;
-  closeHref: string;
+  userId: string | null;
+  onClose: () => void;
 }) {
-  const router = useRouter();
+  const userQuery = useQuery({
+    queryKey: userId ? adminUserQueryKey(userId) : ["admin-user", "idle"],
+    queryFn: () => getAdminUser(userId as string),
+    enabled: userId !== null,
+    placeholderData: keepPreviousData,
+  });
+
+  const user = userQuery.data ?? null;
 
   return (
     <Sheet
       onOpenChange={(open) => {
         if (!open) {
-          router.push(closeHref);
+          onClose();
         }
       }}
-      open={user !== null}
+      open={userId !== null}
     >
       <SheetContent>
+        {userQuery.isPending && !user ? (
+          <div className="flex flex-col gap-4 p-4">
+            <Skeleton className="size-10 rounded-full" />
+            <Skeleton className="h-5 w-40" />
+            <Skeleton className="h-4 w-28" />
+          </div>
+        ) : null}
         {user ? (
           <>
             <SheetHeader>
               <div className="flex items-center gap-3">
                 <Avatar>
-                  {user.image ? <AvatarImage src={user.image} /> : null}
+                  {user.image ? <AvatarImage alt="" src={user.image} /> : null}
                   <AvatarFallback>
                     {user.username.slice(0, 2).toUpperCase()}
                   </AvatarFallback>
@@ -91,8 +104,8 @@ export function UserSheet({
                   label="Banned"
                   value={user.banned ? (user.banReason ?? "Yes") : "No"}
                 />
-                <Field label="Created" value={formatDate(user.createdAt)} />
-                <Field label="Updated" value={formatDate(user.updatedAt)} />
+                <Field label="Created" value={formatDateTime(user.createdAt)} />
+                <Field label="Updated" value={formatDateTime(user.updatedAt)} />
               </dl>
             </div>
           </>
