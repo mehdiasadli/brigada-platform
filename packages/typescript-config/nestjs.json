@@ -9,7 +9,7 @@
     "moduleResolution": "Node",
     "noEmit": false,
     "sourceMap": true,
-    "types": ["node"],
+    "types": ["node", "bun"],
     "verbatimModuleSyntax": false
   }
 }

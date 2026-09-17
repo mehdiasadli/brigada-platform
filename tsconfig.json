@@ -1,6 +1,8 @@
 {
   "compilerOptions": {
     "emitDecoratorMetadata": true,
-    "experimentalDecorators": true
-  }
+    "experimentalDecorators": true,
+    "types": ["bun"]
+  },
+  "include": []
 }

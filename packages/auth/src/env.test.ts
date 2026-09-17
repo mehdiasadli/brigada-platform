@@ -42,12 +42,12 @@ test("splits trusted origins on commas", () => {
       BETTER_AUTH_URL: "http://localhost:4000",
       DISCORD_CLIENT_ID: "discord-app-id",
       DISCORD_CLIENT_SECRET: "discord-app-secret",
-      AUTH_TRUSTED_ORIGINS: "http://localhost:3000, https://auth.brigada.com",
+      AUTH_TRUSTED_ORIGINS: "http://localhost:3501, https://auth.brigada.com",
     },
   });
 
   expect(env.AUTH_TRUSTED_ORIGINS).toEqual([
-    "http://localhost:3000",
+    "http://localhost:3501",
     "https://auth.brigada.com",
   ]);
 });

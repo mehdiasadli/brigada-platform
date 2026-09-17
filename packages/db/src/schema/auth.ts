@@ -3,11 +3,15 @@ import {
   boolean,
   index,
   integer,
+  pgEnum,
   pgTable,
   text,
   timestamp,
   uuid,
 } from "drizzle-orm/pg-core";
+
+export const ROLE_VALUES = ["user", "moderator", "admin"] as const;
+export const roleEnum = pgEnum("user_role", ROLE_VALUES);
 
 export const user = pgTable("user", {
   id: uuid("id").default(sql`pg_catalog.gen_random_uuid()`).primaryKey(),
@@ -20,9 +24,9 @@ export const user = pgTable("user", {
     .defaultNow()
     .$onUpdate(() => /* @__PURE__ */ new Date())
     .notNull(),
-  username: text("username").unique(),
+  username: text("username").notNull().unique(),
   twoFactorEnabled: boolean("two_factor_enabled").default(false),
-  role: text("role"),
+  role: roleEnum("role").default("user").notNull(),
   banned: boolean("banned").default(false),
   banReason: text("ban_reason"),
   banExpires: timestamp("ban_expires"),

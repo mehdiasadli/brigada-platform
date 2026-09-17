@@ -1,0 +1,10 @@
+{
+  "extends": "@brigada/typescript-config/react-library.json",
+  "compilerOptions": {
+    "paths": {
+      "@brigada/ui/*": ["./src/*"]
+    }
+  },
+  "include": ["."],
+  "exclude": ["node_modules", "dist"]
+}

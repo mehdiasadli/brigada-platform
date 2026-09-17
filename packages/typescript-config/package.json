@@ -9,6 +9,7 @@
     "./base.json": "./base.json",
     "./library.json": "./library.json",
     "./nextjs.json": "./nextjs.json",
-    "./nestjs.json": "./nestjs.json"
+    "./nestjs.json": "./nestjs.json",
+    "./react-library.json": "./react-library.json"
   }
 }
