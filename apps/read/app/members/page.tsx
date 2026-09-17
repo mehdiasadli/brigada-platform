@@ -12,6 +12,7 @@ import {
 import { format, parseISO } from "date-fns";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { initials } from "../../lib/initials";
 import { readJson } from "../../lib/read-api";
 import { requireReadMember } from "../../lib/require-member";
 
@@ -27,19 +28,11 @@ type DirectoryMember = {
   memberSince: string;
 };
 
-function initials(name: string) {
-  return name
-    .split(" ")
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase() ?? "")
-    .join("");
-}
-
 export default async function Page() {
-  await requireReadMember();
+  const auth = await requireReadMember();
   const members =
     (await readJson<DirectoryMember[]>("/api/read/members")) ?? [];
+  const me = auth.user.username;
 
   return (
     <main className="flex flex-col gap-8">
@@ -77,7 +70,8 @@ export default async function Page() {
                 <span className="flex min-w-0 flex-col gap-0.5">
                   <span className="font-medium">{member.name}</span>
                   <span className="text-sm text-muted-foreground">
-                    @{member.username} · joined{" "}
+                    @{member.username}
+                    {member.username === me ? " · You" : ""} · joined{" "}
                     {format(parseISO(member.memberSince), "d MMM yyyy")}
                   </span>
                 </span>

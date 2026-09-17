@@ -12,6 +12,8 @@ import { parseCatalogQuery } from "./books.query";
 import { ReadBooksService } from "./books.service";
 import { ReadMembersService } from "./members.service";
 import { ReadMemberGuard } from "./read-member.guard";
+import { parseReadSessionId } from "./sessions.query";
+import { ReadSessionsService } from "./sessions.service";
 
 @Controller("api/read")
 @UseGuards(ReadMemberGuard)
@@ -19,7 +21,18 @@ export class ReadCatalogController {
   constructor(
     @Inject(ReadBooksService) private readonly books: ReadBooksService,
     @Inject(ReadMembersService) private readonly members: ReadMembersService,
+    @Inject(ReadSessionsService) private readonly sessions: ReadSessionsService,
   ) {}
+
+  @Get("sessions")
+  listSessions() {
+    return this.sessions.listForMembers();
+  }
+
+  @Get("sessions/:id")
+  getSession(@Param("id") id: string) {
+    return this.sessions.getForMember(parseReadSessionId(id));
+  }
 
   @Get("books")
   listBooks(@Query() query: Record<string, string | undefined>) {
