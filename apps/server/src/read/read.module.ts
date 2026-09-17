@@ -5,6 +5,7 @@ import { UsersModule } from "../users/users.module";
 import { ReadBooksController } from "./books.controller";
 import { ReadBooksRepository } from "./books.repository";
 import { ReadBooksService } from "./books.service";
+import { ReadCatalogController } from "./catalog.controller";
 import { ReadMeController } from "./me.controller";
 import { ReadMembersController } from "./members.controller";
 import { ReadMembersRepository } from "./members.repository";
@@ -29,6 +30,7 @@ import { ReadSessionsService } from "./sessions.service";
     ReadBooksController,
     ReadSessionsController,
     ReadMeController,
+    ReadCatalogController,
   ],
   providers: [
     ReadMembersService,

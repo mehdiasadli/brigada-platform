@@ -18,6 +18,15 @@ export class ReadMembersService {
     return this.members.list();
   }
 
+  async getProfile(username: string) {
+    const profile = await this.members.findProfileByUsername(username);
+    if (!profile) {
+      throw new NotFoundException("Read member not found");
+    }
+
+    return profile;
+  }
+
   async grant(userId: string) {
     if (!(await this.members.userExists(userId))) {
       throw new NotFoundException("User not found");

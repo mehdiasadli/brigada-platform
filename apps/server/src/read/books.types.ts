@@ -35,9 +35,22 @@ export type UpdateReadBook = Partial<
 
 export type ReadBooksStore = {
   list(): Promise<ReadBook[]>;
+  listVisible(): Promise<ReadBook[]>;
   findById(id: string): Promise<ReadBook | null>;
+  findBySlug(slug: string): Promise<ReadBook | null>;
   findByOlibKey(olibKey: string): Promise<ReadBook | null>;
   listSlugs(): Promise<string[]>;
   insert(book: CreateReadBook & { slug: string }): Promise<ReadBook>;
   update(id: string, patch: UpdateReadBook): Promise<ReadBook | null>;
+  listReviews(bookId: string): Promise<
+    Array<{
+      id: string;
+      userId: string;
+      username: string;
+      name: string;
+      body: string | null;
+      rating: number;
+      createdAt: Date;
+    }>
+  >;
 };

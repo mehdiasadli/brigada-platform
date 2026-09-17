@@ -24,6 +24,20 @@ export class ReadBooksService {
     return this.books.list();
   }
 
+  listVisible() {
+    return this.books.listVisible();
+  }
+
+  async getBySlug(slug: string) {
+    const book = await this.books.findBySlug(slug);
+    if (!book) {
+      throw new NotFoundException("Book not found");
+    }
+
+    const reviews = await this.books.listReviews(book.id);
+    return { book, reviews };
+  }
+
   async getById(id: string) {
     const book = await this.books.findById(id);
     if (!book) {

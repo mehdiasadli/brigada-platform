@@ -1,7 +1,7 @@
 import { db } from "@brigada/db";
-import { readBook } from "@brigada/db/schema";
+import { readBook, readReview, user } from "@brigada/db/schema";
 import { Injectable } from "@nestjs/common";
-import { desc, eq } from "drizzle-orm";
+import { desc, eq, ne } from "drizzle-orm";
 import type {
   CreateReadBook,
   ReadBook,
@@ -34,11 +34,29 @@ export class ReadBooksRepository implements ReadBooksStore {
       .orderBy(desc(readBook.createdAt))) as ReadBook[];
   }
 
+  async listVisible() {
+    return (await db
+      .select(bookColumns)
+      .from(readBook)
+      .where(ne(readBook.status, "removed"))
+      .orderBy(readBook.title)) as ReadBook[];
+  }
+
   async findById(id: string) {
     const [row] = await db
       .select(bookColumns)
       .from(readBook)
       .where(eq(readBook.id, id))
+      .limit(1);
+
+    return (row as ReadBook | undefined) ?? null;
+  }
+
+  async findBySlug(slug: string) {
+    const [row] = await db
+      .select(bookColumns)
+      .from(readBook)
+      .where(eq(readBook.slug, slug))
       .limit(1);
 
     return (row as ReadBook | undefined) ?? null;
@@ -66,6 +84,23 @@ export class ReadBooksRepository implements ReadBooksStore {
     }
 
     return row as ReadBook;
+  }
+
+  async listReviews(bookId: string) {
+    return db
+      .select({
+        id: readReview.id,
+        userId: readReview.userId,
+        username: user.username,
+        name: user.name,
+        body: readReview.body,
+        rating: readReview.rating,
+        createdAt: readReview.createdAt,
+      })
+      .from(readReview)
+      .innerJoin(user, eq(user.id, readReview.userId))
+      .where(eq(readReview.bookId, bookId))
+      .orderBy(desc(readReview.createdAt));
   }
 
   async update(id: string, patch: UpdateReadBook) {
