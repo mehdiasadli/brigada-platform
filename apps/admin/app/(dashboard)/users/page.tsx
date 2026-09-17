@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { listAdminUsers } from "../../../lib/admin-users";
 import { parseUsersPageQuery } from "../../../lib/users-query";
 import { UsersHeader } from "./users-header";
+import { UsersTable } from "./users-table";
 
 export const dynamic = "force-dynamic";
 
@@ -21,6 +22,7 @@ export default async function Page({
   return (
     <div className="flex flex-col gap-6">
       <UsersHeader total={users.total} />
+      <UsersTable query={query} users={users} />
     </div>
   );
 }
