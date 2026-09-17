@@ -16,5 +16,6 @@ import { UsersService } from "./users.service";
     BetterAuthSessionReader,
     { provide: SESSION_READER, useExisting: BetterAuthSessionReader },
   ],
+  exports: [AdminGuard],
 })
 export class UsersModule {}
