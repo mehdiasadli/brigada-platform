@@ -61,7 +61,14 @@ function session(
     book: null,
     candidates: [candidate, { ...candidate, id: "c2", bookId: otherBookId }],
     readers: [
-      { userId, username: "ada", name: "Ada", progress: null, review: null },
+      {
+        userId,
+        username: "ada",
+        name: "Ada",
+        image: null,
+        progress: null,
+        review: null,
+      },
     ],
     ...overrides,
   };
@@ -290,6 +297,43 @@ test("accepts a review once the club has started the book", async () => {
   await expect(
     service.createReview(userId, { bookId, rating: 8 }),
   ).resolves.toMatchObject({ rating: 8 });
+});
+
+test("lists member sessions without private notes", async () => {
+  const current = session({
+    status: "completed",
+    bookId,
+    book: { ...book, status: "completed" },
+    readers: [
+      {
+        userId,
+        username: "ada",
+        name: "Ada",
+        image: null,
+        progress: {
+          percentage: 100,
+          notes: "secret",
+          isCompleted: true,
+          startedAt: null,
+          completedAt: null,
+          progressUpdatedAt: new Date("2026-09-01"),
+        },
+        review: { rating: 8, body: "secret body" },
+      },
+    ],
+  });
+  const service = await createService(createStore(current));
+
+  const listed = await service.listForMembers();
+  expect(listed).toEqual([
+    expect.objectContaining({
+      id: sessionId,
+      status: "completed",
+      readerCount: 1,
+      averageRating: 8,
+    }),
+  ]);
+  expect(JSON.stringify(listed)).not.toContain("secret");
 });
 
 test("completes when every reader is done", async () => {

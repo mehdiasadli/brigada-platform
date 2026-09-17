@@ -8,6 +8,7 @@ import {
 } from "@nestjs/common";
 import type { ReadBook } from "./books.types";
 import { READ_SESSIONS_REPOSITORY, VOTE_PUBLISHER } from "./read.constants";
+import { toMemberSession, toMemberSessionSummary } from "./sessions.member";
 import type { ReadSessionDetail, ReadSessionsStore } from "./sessions.types";
 import type { VotePublisher } from "./vote-publisher";
 
@@ -26,6 +27,21 @@ export class ReadSessionsService {
 
   list() {
     return this.sessions.list();
+  }
+
+  async listForMembers() {
+    const listed = await this.sessions.list();
+    const details = await Promise.all(
+      listed.map((session) => this.sessions.findById(session.id)),
+    );
+
+    return details
+      .filter((session) => session !== null)
+      .map((session) => toMemberSessionSummary(toMemberSession(session)));
+  }
+
+  async getForMember(id: string) {
+    return toMemberSession(await this.getById(id));
   }
 
   markMidtermPosted(sessionId: string, now = new Date()) {
@@ -237,7 +253,7 @@ export class ReadSessionsService {
       (session.book?.status === "reading" ||
         session.book?.status === "completed");
 
-    return { session, progress, canReview };
+    return { session: toMemberSession(session), progress, canReview };
   }
 
   async setReaderProgress(

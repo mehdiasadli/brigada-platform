@@ -51,6 +51,7 @@ export type ReadSessionReader = {
   userId: string;
   username: string;
   name: string;
+  image: string | null;
   progress: {
     percentage: number;
     notes: string | null;

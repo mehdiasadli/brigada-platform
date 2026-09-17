@@ -407,6 +407,7 @@ export class ReadSessionsRepository implements ReadSessionsStore {
         userId: readSessionReader.userId,
         username: user.username,
         name: user.name,
+        image: user.image,
       })
       .from(readSessionReader)
       .innerJoin(user, eq(user.id, readSessionReader.userId))
