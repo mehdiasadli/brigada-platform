@@ -63,6 +63,30 @@
         "typescript": "catalog:",
       },
     },
+    "apps/read": {
+      "name": "@brigada/read",
+      "version": "0.0.0",
+      "dependencies": {
+        "@brigada/auth": "workspace:*",
+        "@brigada/env": "workspace:*",
+        "@brigada/ui": "workspace:*",
+        "date-fns": "^4.4.0",
+        "lucide-react": "^1.46.0",
+        "next": "16.3.3",
+        "react": "catalog:",
+        "react-dom": "catalog:",
+      },
+      "devDependencies": {
+        "@brigada/typescript-config": "workspace:*",
+        "@tailwindcss/postcss": "^4.3.3",
+        "@types/bun": "catalog:",
+        "@types/node": "^24.5.2",
+        "@types/react": "^19",
+        "@types/react-dom": "^19",
+        "tailwindcss": "^4.3.3",
+        "typescript": "catalog:",
+      },
+    },
     "apps/server": {
       "name": "@brigada/server",
       "version": "0.0.0",
@@ -309,6 +333,8 @@
     "@brigada/db": ["@brigada/db@workspace:packages/db"],
 
     "@brigada/env": ["@brigada/env@workspace:packages/env"],
+
+    "@brigada/read": ["@brigada/read@workspace:apps/read"],
 
     "@brigada/server": ["@brigada/server@workspace:apps/server"],
 
