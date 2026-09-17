@@ -10,6 +10,7 @@ export function allowedRedirectOrigins(): Set<string> {
   return new Set([
     new URL(env.NEXT_PUBLIC_APP_URL).origin,
     "http://localhost:3501",
+    "http://localhost:3502",
     ...PRODUCTION_APP_ORIGINS,
   ]);
 }
