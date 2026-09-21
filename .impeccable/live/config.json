@@ -1,0 +1,11 @@
+{
+  "files": [
+    "apps/auth/app/layout.tsx",
+    "apps/admin/app/layout.tsx",
+    "apps/read/app/layout.tsx",
+    "apps/www/app/layout.tsx"
+  ],
+  "insertBefore": "</body>",
+  "commentSyntax": "jsx",
+  "cspChecked": true
+}

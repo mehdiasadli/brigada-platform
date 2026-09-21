@@ -53,7 +53,6 @@ export default async function Page({
 
   const { book, reviews, viewer } = data;
   const canReview = viewer?.canReview ?? false;
-  const canUpdateProgress = viewer?.canUpdateProgress ?? false;
   const ownReview = viewer?.review ?? null;
   const ownProgress = viewer?.progress ?? null;
   const average =
@@ -105,17 +104,19 @@ export default async function Page({
               {book.description}
             </p>
           ) : null}
-          {canUpdateProgress ? (
+          {ownProgress ? (
             <ProgressForm
               bookId={book.id}
-              initialNotes={ownProgress?.notes ?? null}
-              initialPercentage={ownProgress?.percentage ?? 0}
+              initialNotes={ownProgress.notes}
+              initialPercentage={ownProgress.percentage}
             />
-          ) : ownProgress?.isCompleted ? (
-            <p className="text-sm text-muted-foreground">Finished</p>
           ) : null}
-          {canReview ? (
-            <ReviewForm bookId={book.id} defaultOpen={reviewQuery === "1"} />
+          {canReview || ownReview ? (
+            <ReviewForm
+              bookId={book.id}
+              defaultOpen={reviewQuery === "1"}
+              review={ownReview}
+            />
           ) : null}
         </div>
       </section>

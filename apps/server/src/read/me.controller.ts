@@ -54,6 +54,17 @@ export class ReadMeController {
       parseReview(body),
     );
   }
+
+  @Patch("reviews")
+  updateReview(
+    @Req() request: Request & { userId?: string },
+    @Body() body: unknown,
+  ) {
+    return this.sessions.updateReview(
+      requireUserId(request),
+      parseReview(body),
+    );
+  }
 }
 
 function requireUserId(request: Request & { userId?: string }) {

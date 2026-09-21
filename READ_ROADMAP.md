@@ -85,7 +85,7 @@ People can undo a mistake without you.
 
 1. **Edit your own review.** `PATCH` rating and body. Prefill the dialog. Button becomes “Edit review.” No delete.
 2. **Unfinish.** Quiet “Not finished” after 100%: keep last notes, clear `completedAt`, show the progress form again.
-3. **Discord progress by book.** `/set-read-progress` and `/get-progress` take `bookId` so a late finish and a completed session still work.
+3. **Discord progress after the session ends.** Commands update the open book, or the book that just finished. They never ask for a book id. A bad percentage gets a reply from the bot.
 4. **Same rules on the book page.** Unfinish and edit review work from `/books/[slug]`, not only home.
 
 ---
