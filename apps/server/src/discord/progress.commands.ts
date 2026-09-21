@@ -11,13 +11,13 @@ import {
 import { ReadSessionsService } from "../read/sessions.service";
 import { DiscordAccountLookup } from "./discord-account";
 import { GuildLockGuard } from "./guild-lock.guard";
-import { parsePercentage } from "./progress-input";
+import { parsePercentage, readPercentageInput } from "./progress-input";
 
 class SetProgressOptions {
   @StringOption({
     name: "percentage",
     description: "How far you are, as a whole number from 0 to 100",
-    required: false,
+    required: true,
   })
   percentage?: string;
 
@@ -64,7 +64,9 @@ export class ProgressCommands {
       });
     }
 
-    const parsed = parsePercentage(options.percentage);
+    const parsed = parsePercentage(
+      readPercentageInput(options.percentage, interaction.options.data),
+    );
     if ("error" in parsed) {
       return interaction.reply({ content: parsed.error, ephemeral: true });
     }
