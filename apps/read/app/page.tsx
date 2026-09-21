@@ -164,17 +164,17 @@ function CurrentSessionHero({
               >
                 Open book
               </Button>
-              {current.canReview ? <ReviewForm bookId={book.id} /> : null}
+              {current.canReview || current.review ? (
+                <ReviewForm bookId={book.id} review={current.review} />
+              ) : null}
             </div>
           ) : null}
-          {session.status === "active" && !progress?.isCompleted ? (
+          {session.status === "active" && progress ? (
             <ProgressForm
               bookId={book?.id}
-              initialNotes={progress?.notes ?? null}
-              initialPercentage={progress?.percentage ?? 0}
+              initialNotes={progress.notes}
+              initialPercentage={progress.percentage}
             />
-          ) : progress?.isCompleted ? (
-            <p className="text-sm text-muted-foreground">Finished</p>
           ) : null}
         </div>
       </div>

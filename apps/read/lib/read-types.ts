@@ -78,6 +78,7 @@ export type CurrentSession = {
   session: MemberSession;
   progress: ReadProgress | null;
   canReview: boolean;
+  review: { rating: number; body: string | null } | null;
 } | null;
 
 export type CatalogPage = {

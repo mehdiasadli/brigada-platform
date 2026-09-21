@@ -42,7 +42,50 @@ export function ProgressForm({
   const [error, setError] = useState<string | null>(null);
 
   if (initialPercentage >= 100) {
-    return <p className="text-sm text-muted-foreground">Finished</p>;
+    return (
+      <div className="flex items-center gap-2">
+        <p className="text-sm text-muted-foreground">Finished</p>
+        <Button
+          disabled={pending}
+          onClick={() => {
+            setPending(true);
+            setError(null);
+            void fetch("/api/read/me/progress", {
+              method: "PATCH",
+              credentials: "include",
+              headers: { "content-type": "application/json" },
+              body: JSON.stringify({
+                bookId,
+                percentage: 99,
+                notes: initialNotes,
+              }),
+            })
+              .then(async (response) => {
+                if (!response.ok) {
+                  const message = await readResponseError(
+                    response,
+                    "Could not update progress",
+                  );
+                  setError(message);
+                  toast.add({
+                    type: "error",
+                    title: "That didn’t work",
+                    description: message,
+                  });
+                  return;
+                }
+                router.refresh();
+              })
+              .finally(() => setPending(false));
+          }}
+          size="sm"
+          variant="ghost"
+        >
+          Not finished
+        </Button>
+        {error ? <p className="text-sm text-destructive">{error}</p> : null}
+      </div>
+    );
   }
 
   return (

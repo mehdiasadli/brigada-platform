@@ -25,15 +25,18 @@ import { readResponseError } from "../lib/api-error";
 
 export function ReviewForm({
   bookId,
+  review = null,
   defaultOpen = false,
 }: {
   bookId: string;
+  review?: { rating: number; body: string | null } | null;
   defaultOpen?: boolean;
 }) {
   const router = useRouter();
+  const editing = review !== null;
   const [open, setOpen] = useState(defaultOpen);
-  const [rating, setRating] = useState(8);
-  const [body, setBody] = useState("");
+  const [rating, setRating] = useState(review?.rating ?? 8);
+  const [body, setBody] = useState(review?.body ?? "");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -41,18 +44,21 @@ export function ReviewForm({
     <>
       <Button
         onClick={() => {
-          setRating(8);
-          setBody("");
+          setRating(review?.rating ?? 8);
+          setBody(review?.body ?? "");
           setError(null);
           setOpen(true);
         }}
+        variant={editing ? "outline" : "default"}
       >
-        Write a review
+        {editing ? "Edit review" : "Write a review"}
       </Button>
       <Dialog onOpenChange={setOpen} open={open}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Write a review</DialogTitle>
+            <DialogTitle>
+              {editing ? "Edit review" : "Write a review"}
+            </DialogTitle>
             <DialogDescription>
               Rate the book in half stars. You can add a note if you want.
             </DialogDescription>
@@ -64,7 +70,7 @@ export function ReviewForm({
               setPending(true);
               setError(null);
               void fetch("/api/read/me/reviews", {
-                method: "POST",
+                method: editing ? "PATCH" : "POST",
                 credentials: "include",
                 headers: { "content-type": "application/json" },
                 body: JSON.stringify({
@@ -121,7 +127,7 @@ export function ReviewForm({
             ) : null}
             <DialogFooter>
               <Button disabled={pending} type="submit">
-                Publish review
+                {editing ? "Save review" : "Publish review"}
               </Button>
             </DialogFooter>
           </form>

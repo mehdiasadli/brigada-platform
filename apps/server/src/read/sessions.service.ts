@@ -253,7 +253,21 @@ export class ReadSessionsService {
       (session.book?.status === "reading" ||
         session.book?.status === "completed");
 
-    return { session: toMemberSession(session), progress, canReview };
+    return {
+      session: toMemberSession(session),
+      progress,
+      canReview,
+      review: review ? { rating: review.rating, body: review.body } : null,
+    };
+  }
+
+  async memberProgress(userId: string, bookId?: string) {
+    if (bookId) {
+      return this.sessions.findProgressForBook(userId, bookId);
+    }
+
+    const current = await this.currentForMember(userId);
+    return current?.progress ?? null;
   }
 
   async setReaderProgress(
@@ -377,6 +391,36 @@ export class ReadSessionsService {
       body: input.body ?? null,
       rating: input.rating,
     });
+  }
+
+  async updateReview(
+    userId: string,
+    input: { bookId: string; rating: number; body?: string | null },
+  ) {
+    const [book] = await this.sessions.findBooksByIds([input.bookId]);
+    if (!book || book.status === "removed") {
+      throw new NotFoundException("Book not found");
+    }
+
+    if (book.status !== "reading" && book.status !== "completed") {
+      throw new ConflictException(
+        "Reviews open after the club starts this book",
+      );
+    }
+
+    if (!(await this.sessions.findReview(userId, input.bookId))) {
+      throw new ConflictException("You have not reviewed this book");
+    }
+
+    const updated = await this.sessions.updateReview(userId, input.bookId, {
+      rating: input.rating,
+      body: input.body ?? null,
+    });
+    if (!updated) {
+      throw new NotFoundException("Review not found");
+    }
+
+    return updated;
   }
 }
 

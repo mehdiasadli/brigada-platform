@@ -1,3 +1,4 @@
+import { z } from "@brigada/env";
 import { Inject, Injectable, UseGuards } from "@nestjs/common";
 import type { User } from "discord.js";
 import {
@@ -30,6 +31,13 @@ class SetProgressOptions {
     max_length: 200,
   })
   notes?: string;
+
+  @StringOption({
+    name: "book",
+    description: "Book id, for a session that already ended",
+    required: false,
+  })
+  bookId?: string;
 }
 
 class GetProgressOptions {
@@ -39,6 +47,13 @@ class GetProgressOptions {
     required: false,
   })
   member?: User;
+
+  @StringOption({
+    name: "book",
+    description: "Book id, for a session that already ended",
+    required: false,
+  })
+  bookId?: string;
 }
 
 @Injectable()
@@ -67,8 +82,17 @@ export class ProgressCommands {
       });
     }
 
+    const bookId = parseBookId(options.bookId);
+    if (bookId === null) {
+      return interaction.reply({
+        content: "That book id is not valid.",
+        ephemeral: true,
+      });
+    }
+
     try {
       const progress = await this.sessions.setProgress(userId, {
+        bookId,
         percentage: options.percentage,
         notes: options.notes ?? null,
       });
@@ -78,7 +102,9 @@ export class ProgressCommands {
       });
     } catch {
       return interaction.reply({
-        content: "Could not update progress. Are you in the active session?",
+        content: bookId
+          ? "Could not update progress for that book."
+          : "Could not update progress. Are you in the active session?",
         ephemeral: true,
       });
     }
@@ -102,19 +128,38 @@ export class ProgressCommands {
       });
     }
 
-    const current = await this.sessions.currentForMember(userId);
-    if (!current?.progress) {
+    const bookId = parseBookId(options.bookId);
+    if (bookId === null) {
       return interaction.reply({
-        content: "No progress on the current session.",
+        content: "That book id is not valid.",
+        ephemeral: true,
+      });
+    }
+
+    const progress = await this.sessions.memberProgress(userId, bookId);
+    if (!progress) {
+      return interaction.reply({
+        content: bookId
+          ? "No progress for that book."
+          : "No progress on the current session.",
         ephemeral: true,
       });
     }
 
     return interaction.reply({
-      content: `${target.displayName}: ${current.progress.percentage}%${
-        current.progress.notes ? ` — ${current.progress.notes}` : ""
+      content: `${target.displayName}: ${progress.percentage}%${
+        progress.notes ? ` · ${progress.notes}` : ""
       }`,
       ephemeral: true,
     });
   }
+}
+
+function parseBookId(value: string | undefined) {
+  if (!value) {
+    return undefined;
+  }
+
+  const parsed = z.uuid().safeParse(value);
+  return parsed.success ? parsed.data : null;
 }

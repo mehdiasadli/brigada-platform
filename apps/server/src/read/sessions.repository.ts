@@ -356,6 +356,20 @@ export class ReadSessionsRepository implements ReadSessionsStore {
     return row as ReadReview;
   }
 
+  async updateReview(
+    userId: string,
+    bookId: string,
+    patch: { rating: number; body: string | null },
+  ) {
+    const [row] = await db
+      .update(readReview)
+      .set(patch)
+      .where(and(eq(readReview.userId, userId), eq(readReview.bookId, bookId)))
+      .returning();
+
+    return (row as ReadReview | undefined) ?? null;
+  }
+
   async findReview(userId: string, bookId: string) {
     const [row] = await db
       .select()

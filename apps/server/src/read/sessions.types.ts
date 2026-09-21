@@ -156,5 +156,10 @@ export type ReadSessionsStore = {
     body: string | null;
     rating: number;
   }): Promise<ReadReview>;
+  updateReview(
+    userId: string,
+    bookId: string,
+    patch: { rating: number; body: string | null },
+  ): Promise<ReadReview | null>;
   findReview(userId: string, bookId: string): Promise<ReadReview | null>;
 };

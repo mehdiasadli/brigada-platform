@@ -124,6 +124,17 @@ function createStore(
       }),
     ),
     findReview: mock(() => Promise.resolve(null)),
+    updateReview: mock(() =>
+      Promise.resolve({
+        id: "r1",
+        bookId,
+        userId,
+        body: "fixed",
+        rating: 6,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      }),
+    ),
     ...overrides,
   };
 }
@@ -286,6 +297,69 @@ test("rejects progress without a book after the session ended", async () => {
   ).rejects.toBeInstanceOf(ConflictException);
 });
 
+test("clears completion when progress drops below 100 and keeps notes", async () => {
+  const progress = {
+    id: "p1",
+    sessionId,
+    userId,
+    percentage: 100,
+    notes: "loved the ending",
+    isCompleted: true,
+    startedAt: new Date("2026-09-01"),
+    completedAt: new Date("2026-09-10"),
+    progressUpdatedAt: new Date("2026-09-10"),
+  };
+  const store = createStore(
+    session({
+      status: "completed",
+      bookId,
+      book: { ...book, status: "completed" },
+    }),
+    { findProgressForBook: mock(() => Promise.resolve(progress)) },
+  );
+  const service = await createService(store);
+
+  await service.setProgress(userId, {
+    bookId,
+    percentage: 99,
+    notes: "loved the ending",
+  });
+
+  expect(store.updateProgress).toHaveBeenCalledWith(
+    sessionId,
+    userId,
+    expect.objectContaining({
+      percentage: 99,
+      notes: "loved the ending",
+      isCompleted: false,
+      completedAt: null,
+    }),
+  );
+});
+
+test("reads progress for a finished book when given a book id", async () => {
+  const progress = {
+    id: "p1",
+    sessionId,
+    userId,
+    percentage: 100,
+    notes: null,
+    isCompleted: true,
+    startedAt: new Date("2026-09-01"),
+    completedAt: new Date("2026-09-10"),
+    progressUpdatedAt: new Date("2026-09-10"),
+  };
+  const store = createStore(session({ status: "completed", bookId }), {
+    findProgressForBook: mock(() => Promise.resolve(progress)),
+  });
+  const service = await createService(store);
+
+  await expect(service.memberProgress(userId, bookId)).resolves.toMatchObject({
+    percentage: 100,
+  });
+  await expect(service.memberProgress(userId)).resolves.toBeNull();
+});
+
 test("accepts a review once the club has started the book", async () => {
   const store = createStore(session({ status: "active", bookId }), {
     findBooksByIds: mock(() =>
@@ -297,6 +371,46 @@ test("accepts a review once the club has started the book", async () => {
   await expect(
     service.createReview(userId, { bookId, rating: 8 }),
   ).resolves.toMatchObject({ rating: 8 });
+});
+
+test("updates the author's review", async () => {
+  const existing = {
+    id: "r1",
+    bookId,
+    userId,
+    body: "typo",
+    rating: 8,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
+  const store = createStore(session({ status: "completed", bookId }), {
+    findBooksByIds: mock(() =>
+      Promise.resolve([{ ...book, status: "completed" as const }]),
+    ),
+    findReview: mock(() => Promise.resolve(existing)),
+  });
+  const service = await createService(store);
+
+  await expect(
+    service.updateReview(userId, { bookId, rating: 6, body: "fixed" }),
+  ).resolves.toMatchObject({ rating: 6, body: "fixed" });
+  expect(store.updateReview).toHaveBeenCalledWith(userId, bookId, {
+    rating: 6,
+    body: "fixed",
+  });
+});
+
+test("rejects a review edit when the member has not reviewed the book", async () => {
+  const store = createStore(session({ status: "active", bookId }), {
+    findBooksByIds: mock(() =>
+      Promise.resolve([{ ...book, status: "reading" as const }]),
+    ),
+  });
+  const service = await createService(store);
+
+  await expect(
+    service.updateReview(userId, { bookId, rating: 6 }),
+  ).rejects.toBeInstanceOf(ConflictException);
 });
 
 test("lists member sessions without private notes", async () => {
