@@ -146,6 +146,14 @@ export type ReadSessionsStore = {
     userId: string,
     bookId: string,
   ): Promise<ReadProgress | null>;
+  findLatestProgress(userId: string): Promise<
+    | (ReadProgress & {
+        bookId: string;
+        title: string;
+        sessionStatus: ReadSessionStatus;
+      })
+    | null
+  >;
   findCompletedProgressForBook(
     userId: string,
     bookId: string,

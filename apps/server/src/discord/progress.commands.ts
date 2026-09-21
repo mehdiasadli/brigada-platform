@@ -1,9 +1,7 @@
-import { z } from "@brigada/env";
-import { Inject, Injectable, UseGuards } from "@nestjs/common";
+import { HttpException, Inject, Injectable, UseGuards } from "@nestjs/common";
 import type { User } from "discord.js";
 import {
   Context,
-  NumberOption,
   Options,
   SlashCommand,
   type SlashCommandContext,
@@ -13,31 +11,22 @@ import {
 import { ReadSessionsService } from "../read/sessions.service";
 import { DiscordAccountLookup } from "./discord-account";
 import { GuildLockGuard } from "./guild-lock.guard";
+import { parsePercentage } from "./progress-input";
 
 class SetProgressOptions {
-  @NumberOption({
+  @StringOption({
     name: "percentage",
-    description: "How far you are, 0–100",
-    required: true,
-    min_value: 0,
-    max_value: 100,
+    description: "How far you are, as a whole number from 0 to 100",
+    required: false,
   })
-  percentage!: number;
+  percentage?: string;
 
   @StringOption({
     name: "notes",
-    description: "Optional note",
+    description: "Optional note, only you can see it",
     required: false,
-    max_length: 200,
   })
   notes?: string;
-
-  @StringOption({
-    name: "book",
-    description: "Book id, for a session that already ended",
-    required: false,
-  })
-  bookId?: string;
 }
 
 class GetProgressOptions {
@@ -47,13 +36,6 @@ class GetProgressOptions {
     required: false,
   })
   member?: User;
-
-  @StringOption({
-    name: "book",
-    description: "Book id, for a session that already ended",
-    required: false,
-  })
-  bookId?: string;
 }
 
 @Injectable()
@@ -67,7 +49,7 @@ export class ProgressCommands {
 
   @SlashCommand({
     name: "set-read-progress",
-    description: "Update your reading progress",
+    description: "Update your progress on the club's current book",
   })
   async setProgress(
     @Context() [interaction]: SlashCommandContext,
@@ -82,29 +64,34 @@ export class ProgressCommands {
       });
     }
 
-    const bookId = parseBookId(options.bookId);
-    if (bookId === null) {
+    const parsed = parsePercentage(options.percentage);
+    if ("error" in parsed) {
+      return interaction.reply({ content: parsed.error, ephemeral: true });
+    }
+
+    const notes = options.notes?.trim() ?? "";
+    if (notes.length > 200) {
       return interaction.reply({
-        content: "That book id is not valid.",
+        content: "Notes can be up to 200 characters.",
         ephemeral: true,
       });
     }
 
     try {
-      const progress = await this.sessions.setProgress(userId, {
-        bookId,
-        percentage: options.percentage,
-        notes: options.notes ?? null,
+      const saved = await this.sessions.setReadingProgress(userId, {
+        percentage: parsed.percentage,
+        ...(options.notes === undefined ? {} : { notes: notes || null }),
       });
       return interaction.reply({
-        content: `Progress set to ${progress.percentage}%.`,
+        content: `${saved.title} is now ${saved.progress.percentage}%.`,
         ephemeral: true,
       });
-    } catch {
+    } catch (error) {
       return interaction.reply({
-        content: bookId
-          ? "Could not update progress for that book."
-          : "Could not update progress. Are you in the active session?",
+        content: commandError(
+          error,
+          "Could not update progress on the current book.",
+        ),
         ephemeral: true,
       });
     }
@@ -112,7 +99,7 @@ export class ProgressCommands {
 
   @SlashCommand({
     name: "get-progress",
-    description: "Show reading progress",
+    description: "Show progress on the club's current book",
   })
   async getProgress(
     @Context() [interaction]: SlashCommandContext,
@@ -128,38 +115,44 @@ export class ProgressCommands {
       });
     }
 
-    const bookId = parseBookId(options.bookId);
-    if (bookId === null) {
+    try {
+      const reading = await this.sessions.readingForMember(userId);
+      const own = target.id === interaction.user.id;
+      const note =
+        own && reading.progress.notes ? ` · ${reading.progress.notes}` : "";
       return interaction.reply({
-        content: "That book id is not valid.",
+        content: `${target.displayName} is ${reading.progress.percentage}% through ${reading.title}${note}`,
+        ephemeral: true,
+      });
+    } catch (error) {
+      return interaction.reply({
+        content: commandError(error, "No progress on the current book."),
         ephemeral: true,
       });
     }
-
-    const progress = await this.sessions.memberProgress(userId, bookId);
-    if (!progress) {
-      return interaction.reply({
-        content: bookId
-          ? "No progress for that book."
-          : "No progress on the current session.",
-        ephemeral: true,
-      });
-    }
-
-    return interaction.reply({
-      content: `${target.displayName}: ${progress.percentage}%${
-        progress.notes ? ` · ${progress.notes}` : ""
-      }`,
-      ephemeral: true,
-    });
   }
 }
 
-function parseBookId(value: string | undefined) {
-  if (!value) {
-    return undefined;
+function commandError(error: unknown, fallback: string) {
+  if (error instanceof HttpException) {
+    const response = error.getResponse();
+    if (typeof response === "string") {
+      return response;
+    }
+    if (
+      typeof response === "object" &&
+      response !== null &&
+      "message" in response
+    ) {
+      const message = response.message;
+      if (typeof message === "string") {
+        return message;
+      }
+      if (Array.isArray(message) && typeof message[0] === "string") {
+        return message[0];
+      }
+    }
   }
 
-  const parsed = z.uuid().safeParse(value);
-  return parsed.success ? parsed.data : null;
+  return fallback;
 }

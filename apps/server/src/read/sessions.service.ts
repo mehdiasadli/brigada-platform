@@ -261,6 +261,54 @@ export class ReadSessionsService {
     };
   }
 
+  async readingForMember(userId: string) {
+    const open = await this.sessions.findOpen();
+    if (open) {
+      const session = await this.getById(open.id);
+      if (session.status !== "active") {
+        throw new ConflictException(
+          "The club is still voting. Progress opens when a book is picked.",
+        );
+      }
+
+      const progress = await this.sessions.findProgress(session.id, userId);
+      if (!progress || !session.bookId) {
+        throw new ConflictException("You are not in this session.");
+      }
+
+      return {
+        bookId: session.bookId,
+        title: session.book?.title ?? "This book",
+        progress,
+      };
+    }
+
+    const latest = await this.sessions.findLatestProgress(userId);
+    if (!latest) {
+      throw new ConflictException("There is no book to update.");
+    }
+
+    return {
+      bookId: latest.bookId,
+      title: latest.title,
+      progress: latest,
+    };
+  }
+
+  async setReadingProgress(
+    userId: string,
+    input: { percentage: number; notes?: string | null },
+  ) {
+    const reading = await this.readingForMember(userId);
+    const progress = await this.setProgress(userId, {
+      bookId: reading.bookId,
+      percentage: input.percentage,
+      ...(input.notes === undefined ? {} : { notes: input.notes }),
+    });
+
+    return { title: reading.title, progress };
+  }
+
   async memberProgress(userId: string, bookId?: string) {
     if (bookId) {
       return this.sessions.findProgressForBook(userId, bookId);
@@ -338,7 +386,10 @@ export class ReadSessionsService {
       userId,
       {
         percentage: input.percentage,
-        notes: input.notes ?? null,
+        notes:
+          input.notes === undefined
+            ? (target.progress.notes ?? null)
+            : input.notes,
         isCompleted,
         startedAt: target.progress.startedAt ?? now,
         completedAt: isCompleted ? (target.progress.completedAt ?? now) : null,

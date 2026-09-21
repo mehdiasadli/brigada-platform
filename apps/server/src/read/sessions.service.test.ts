@@ -111,6 +111,7 @@ function createStore(
       }),
     ),
     findProgressForBook: mock(() => Promise.resolve(null)),
+    findLatestProgress: mock(() => Promise.resolve(null)),
     findCompletedProgressForBook: mock(() => Promise.resolve(null)),
     insertReview: mock(() =>
       Promise.resolve({
@@ -334,6 +335,53 @@ test("clears completion when progress drops below 100 and keeps notes", async ()
       isCompleted: false,
       completedAt: null,
     }),
+  );
+});
+
+test("updates the finished book when nothing is open", async () => {
+  const progress = {
+    id: "p1",
+    sessionId,
+    userId,
+    percentage: 40,
+    notes: "chapter 4",
+    isCompleted: false,
+    startedAt: new Date("2026-09-01"),
+    completedAt: null,
+    progressUpdatedAt: new Date("2026-09-01"),
+    bookId,
+    title: "Dune",
+    sessionStatus: "completed" as const,
+  };
+  const store = createStore(session({ status: "completed", bookId }), {
+    findLatestProgress: mock(() => Promise.resolve(progress)),
+    findProgressForBook: mock(() => Promise.resolve(progress)),
+  });
+  const service = await createService(store);
+
+  await expect(
+    service.setReadingProgress(userId, { percentage: 12 }),
+  ).resolves.toMatchObject({ title: "Dune" });
+  expect(store.updateProgress).toHaveBeenCalledWith(
+    sessionId,
+    userId,
+    expect.objectContaining({
+      percentage: 12,
+      notes: "chapter 4",
+    }),
+  );
+});
+
+test("refuses progress while the club is still voting", async () => {
+  const current = session({ status: "voting" });
+  const service = await createService(
+    createStore(current, {
+      findOpen: mock(() => Promise.resolve(current)),
+    }),
+  );
+
+  await expect(service.readingForMember(userId)).rejects.toThrow(
+    "The club is still voting",
   );
 });
 
