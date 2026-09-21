@@ -2,7 +2,9 @@
   "compilerOptions": {
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
+    "noEmit": true,
+    "skipLibCheck": true,
     "types": ["bun"]
   },
-  "include": []
+  "include": ["commitlint.config.ts"]
 }
