@@ -1,10 +1,10 @@
-import { Badge } from "@brigada/ui/components/badge";
 import { format, parseISO } from "date-fns";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { BookCover } from "../../../components/book-cover";
 import { ReaderBoard } from "../../../components/reader-board";
+import { VoteChoice } from "../../../components/vote-choice";
 import { readJson } from "../../../lib/read-api";
 import type { MemberSession } from "../../../lib/read-types";
 import { requireReadMember } from "../../../lib/require-member";
@@ -48,7 +48,7 @@ export default async function Page({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  await requireReadMember();
+  const auth = await requireReadMember();
   const { id } = await params;
   const session = await readJson<MemberSession>(`/api/read/sessions/${id}`);
   if (!session) {
@@ -71,9 +71,12 @@ export default async function Page({
 
   return (
     <main className="flex flex-col gap-10">
-      <section className="grid gap-8 md:grid-cols-[13rem_1fr] md:items-start lg:grid-cols-[16rem_1fr]">
+      <section className="grid gap-6 md:grid-cols-[9rem_1fr] md:items-end">
         {session.book ? (
-          <Link className="block" href={`/books/${session.book.slug}`}>
+          <Link
+            className="order-2 block max-w-36 md:order-1"
+            href={`/books/${session.book.slug}`}
+          >
             <BookCover
               alt={session.book.title}
               coverId={session.book.coverId}
@@ -84,72 +87,43 @@ export default async function Page({
         ) : (
           <BookCover coverId={null} title="Session" />
         )}
-        <div className="flex flex-col gap-4">
-          <Badge className="w-fit" variant="secondary">
-            {sessionStatusLabel(session.status)}
-          </Badge>
-          <h1 className="text-3xl font-medium tracking-tight md:text-4xl">
+        <div className="order-1 flex flex-col gap-3 md:order-2">
+          <h1 className="max-w-[14ch] text-balance text-[2.75rem] font-semibold leading-[0.92] tracking-tight md:text-6xl">
             {session.book?.title ?? "Session"}
           </h1>
-          {session.book ? (
-            <p className="text-muted-foreground">
-              {session.book.author}, {session.book.pageCount} pages
-            </p>
-          ) : null}
-          {session.averageRating !== null ? (
-            <p className="text-sm text-muted-foreground">
-              Club rating {formatRating(session.averageRating)}
-            </p>
-          ) : null}
+          <p className="text-muted-foreground">
+            {sessionStatusLabel(session.status)}
+            {session.book
+              ? ` · ${session.book.author}, ${session.book.pageCount} pages`
+              : null}
+            {session.averageRating !== null
+              ? ` · ${formatRating(session.averageRating)}`
+              : ""}
+          </p>
           {dates.length > 0 ? (
-            <dl className="grid max-w-md grid-cols-2 gap-3 text-sm">
-              {dates.map(([label, value]) => (
-                <div className="flex flex-col gap-0.5" key={label}>
-                  <dt className="text-muted-foreground">{label}</dt>
-                  <dd>{value}</dd>
-                </div>
-              ))}
-            </dl>
+            <p className="text-sm text-muted-foreground tabular-nums">
+              {dates.map(([label, value]) => `${label} ${value}`).join(" · ")}
+            </p>
           ) : null}
         </div>
       </section>
       {alsoRans.length > 0 ? (
-        <section className="flex flex-col gap-4">
-          <h2 className="text-xl font-medium tracking-tight">
-            {session.book ? "Also on the slate" : "Slate"}
+        <section className="flex flex-col gap-3">
+          <h2 className="text-base font-semibold">
+            {session.book ? "Also on the vote" : "Up for a vote"}
           </h2>
-          <div className="grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-            {alsoRans.map((candidate) => (
-              <div
-                className="flex flex-col gap-2"
+          <ol className="border-t border-foreground/15">
+            {alsoRans.map((candidate, index) => (
+              <VoteChoice
+                choice={candidate}
+                index={index + 1}
                 key={candidate.slug ?? candidate.title}
-              >
-                <BookCover
-                  coverId={candidate.coverId}
-                  title={candidate.title}
-                />
-                {candidate.slug ? (
-                  <Link
-                    className="line-clamp-2 font-medium hover:underline"
-                    href={`/books/${candidate.slug}`}
-                  >
-                    {candidate.title}
-                  </Link>
-                ) : (
-                  <p className="line-clamp-2 font-medium">{candidate.title}</p>
-                )}
-                <p className="line-clamp-1 text-sm text-muted-foreground">
-                  {candidate.author}
-                </p>
-              </div>
+              />
             ))}
-          </div>
+          </ol>
         </section>
       ) : null}
-      <section className="flex max-w-xl flex-col gap-3">
-        <h2 className="text-xl font-medium tracking-tight">Readers</h2>
-        <ReaderBoard readers={session.readers} />
-      </section>
+      <ReaderBoard readers={session.readers} youId={auth.user.id} />
     </main>
   );
 }

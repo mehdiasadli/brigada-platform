@@ -1,0 +1,22 @@
+/* Read only. The stage is black; the sheet uses the paper tokens. */
+.club {
+  --background: #f4f4f1;
+  --foreground: #141414;
+  --card: #f4f4f1;
+  --card-foreground: #141414;
+  --popover: #f4f4f1;
+  --popover-foreground: #141414;
+  --primary: #d01212;
+  --primary-foreground: #f4f4f1;
+  --secondary: #141414;
+  --secondary-foreground: #f4f4f1;
+  --muted: #e6e6e1;
+  --muted-foreground: #4a4a4a;
+  --accent: #f3d2cf;
+  --accent-foreground: #141414;
+  --border: #141414;
+  --input: #141414;
+  --ring: #d01212;
+  background: #0c0c0c;
+  color: #f4f4f1;
+}

@@ -23,24 +23,24 @@ export default async function Page() {
   return (
     <main className="flex flex-col gap-8">
       <div className="flex flex-col gap-2">
-        <h1 className="text-3xl font-medium tracking-tight md:text-4xl">
+        <h1 className="text-balance text-[2.75rem] font-semibold leading-[0.92] tracking-tight md:text-6xl">
           Sessions
         </h1>
         <p className="max-w-xl text-muted-foreground">
-          Every vote and read the club has run.
+          Every vote and book the club has run.
         </p>
       </div>
       {sessions.length === 0 ? (
-        <Empty className="border">
-          <EmptyHeader>
+        <Empty className="items-start rounded-none p-0 text-left">
+          <EmptyHeader className="max-w-none items-start text-left">
             <EmptyTitle>No sessions yet</EmptyTitle>
             <EmptyDescription>
-              An admin will open the first vote in Discord.
+              The first vote will show up here after it starts in Discord.
             </EmptyDescription>
           </EmptyHeader>
         </Empty>
       ) : (
-        <div className="border-t">
+        <div className="border-t border-foreground/15">
           {sessions.map((session) => (
             <SessionCard key={session.id} session={session} />
           ))}

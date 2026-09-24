@@ -5,7 +5,13 @@ import { Spinner } from "@brigada/ui/components/spinner";
 import { useTransition } from "react";
 import { authClient } from "../lib/auth-client";
 
-export function LogoutButton({ href }: { href: string }) {
+export function LogoutButton({
+  href,
+  className,
+}: {
+  href: string;
+  className?: string;
+}) {
   const [isPending, startLogout] = useTransition();
 
   function logOut() {
@@ -21,7 +27,13 @@ export function LogoutButton({ href }: { href: string }) {
   }
 
   return (
-    <Button disabled={isPending} onClick={logOut} size="sm" variant="ghost">
+    <Button
+      className={className}
+      disabled={isPending}
+      onClick={logOut}
+      size="sm"
+      variant="ghost"
+    >
       {isPending ? <Spinner /> : null}
       Sign out
     </Button>

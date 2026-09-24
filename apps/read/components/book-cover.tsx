@@ -7,8 +7,8 @@ import { openLibraryCoverUrl } from "../lib/cover";
 
 function CoverPlaceholder({ title }: { title: string }) {
   return (
-    <div className="flex size-full flex-col justify-end border-l-4 border-border bg-muted px-2 py-2.5">
-      <p className="line-clamp-4 text-xs font-medium leading-tight text-muted-foreground">
+    <div className="flex size-full items-end bg-muted p-3">
+      <p className="line-clamp-4 text-xs font-medium leading-snug text-muted-foreground">
         {title}
       </p>
     </div>

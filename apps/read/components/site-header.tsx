@@ -9,12 +9,7 @@ import { authAppUrl } from "../lib/auth-url";
 import { initials } from "../lib/initials";
 import { getServerSession } from "../lib/session";
 import { LogoutButton } from "./logout-button";
-
-const links = [
-  { href: "/books", label: "Books" },
-  { href: "/sessions", label: "Sessions" },
-  { href: "/members", label: "Members" },
-] as const;
+import { SiteNav } from "./site-nav";
 
 export async function SiteHeader() {
   const session = await getServerSession();
@@ -22,24 +17,13 @@ export async function SiteHeader() {
   const signOutHref = authAppUrl(env.NEXT_PUBLIC_APP_URL);
 
   return (
-    <header className="border-b">
-      <nav className="mx-auto flex h-14 max-w-6xl items-center gap-6 px-4 text-sm">
-        <Link className="font-medium" href="/">
-          Read
-        </Link>
-        {links.map((link) => (
-          <Link
-            className="text-muted-foreground hover:text-foreground"
-            href={link.href}
-            key={link.href}
-          >
-            {link.label}
-          </Link>
-        ))}
+    <header className="sticky top-0 z-40 bg-[#0c0c0c]">
+      <nav className="mx-auto flex min-h-14 max-w-2xl flex-wrap items-center gap-x-4 gap-y-2 px-5 py-3 text-sm md:px-10">
+        <SiteNav />
         {user ? (
           <div className="ml-auto flex items-center gap-2">
             <Link
-              className="flex items-center gap-2 hover:text-foreground"
+              className="flex items-center gap-2 text-[#f4f4f1]"
               href={user.username ? `/members/${user.username}` : "/members"}
             >
               <Avatar size="sm">
@@ -50,7 +34,10 @@ export async function SiteHeader() {
               </Avatar>
               <span className="hidden sm:inline">{user.name}</span>
             </Link>
-            <LogoutButton href={signOutHref} />
+            <LogoutButton
+              className="text-[#f4f4f1] hover:bg-white/10 hover:text-[#f4f4f1]"
+              href={signOutHref}
+            />
           </div>
         ) : null}
       </nav>

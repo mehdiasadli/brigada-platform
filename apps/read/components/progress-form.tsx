@@ -43,8 +43,8 @@ export function ProgressForm({
 
   if (initialPercentage >= 100) {
     return (
-      <div className="flex items-center gap-2">
-        <p className="text-sm text-muted-foreground">Finished</p>
+      <div className="flex flex-wrap items-end justify-between gap-4 border-y border-foreground/15 py-4">
+        <p className="text-5xl font-semibold tracking-tight">Finished</p>
         <Button
           disabled={pending}
           onClick={() => {
@@ -90,11 +90,18 @@ export function ProgressForm({
 
   return (
     <>
-      <div className="flex flex-col gap-3">
-        <p className="text-sm text-muted-foreground">
-          {initialPercentage}% done
-          {initialNotes ? ` · ${initialNotes}` : ""}
-        </p>
+      <div className="flex flex-wrap items-end justify-between gap-4 border-y border-foreground/15 py-4">
+        <div className="flex flex-col gap-1">
+          <p className="font-mono text-5xl font-semibold tabular-nums tracking-tight">
+            {initialPercentage}
+            <span className="text-xl text-muted-foreground">%</span>
+          </p>
+          {initialNotes ? (
+            <p className="max-w-xs text-sm text-muted-foreground">
+              {initialNotes}
+            </p>
+          ) : null}
+        </div>
         <Button
           onClick={() => {
             setPercentage(initialPercentage);
@@ -102,7 +109,6 @@ export function ProgressForm({
             setError(null);
             setOpen(true);
           }}
-          variant="outline"
         >
           Update progress
         </Button>
@@ -112,8 +118,7 @@ export function ProgressForm({
           <DialogHeader>
             <DialogTitle>Update progress</DialogTitle>
             <DialogDescription>
-              You can update this even after the session ends. Set 100 to mark
-              the book finished.
+              Set 100 to finish the book. Notes stay private.
             </DialogDescription>
           </DialogHeader>
           <form
@@ -167,7 +172,7 @@ export function ProgressForm({
                 />
               </Field>
               <Field>
-                <FieldLabel htmlFor="progress-notes">Notes</FieldLabel>
+                <FieldLabel htmlFor="progress-notes">Private notes</FieldLabel>
                 <Textarea
                   id="progress-notes"
                   onChange={(event) => setNotes(event.target.value)}

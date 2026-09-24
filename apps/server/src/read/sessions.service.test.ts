@@ -37,6 +37,8 @@ const candidate: ReadSessionCandidate = {
   coverId: book.coverId,
   slug: book.slug,
   discordAnswerId: 1,
+  nominationReason: null,
+  nominatorName: null,
 };
 
 function session(

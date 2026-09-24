@@ -1,16 +1,16 @@
-import { Badge } from "@brigada/ui/components/badge";
 import { Separator } from "@brigada/ui/components/separator";
 import { StarRating } from "@brigada/ui/components/star-rating";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { BookCover } from "../../../components/book-cover";
+import { NominateBookDialog } from "../../../components/nominate-dialog";
 import { ProgressForm } from "../../../components/progress-form";
 import { ReviewForm } from "../../../components/review-form";
 import { readJson } from "../../../lib/read-api";
 import type { BookPage } from "../../../lib/read-types";
 import { requireReadMember } from "../../../lib/require-member";
-import { bookStatusLabel, bookStatusVariant } from "../../../lib/status";
+import { bookStatusLabel } from "../../../lib/status";
 
 export async function generateMetadata({
   params,
@@ -63,46 +63,45 @@ export default async function Page({
 
   return (
     <main className="flex flex-col gap-12">
-      <section className="grid gap-8 md:grid-cols-[16rem_1fr] md:items-start lg:grid-cols-[18rem_1fr]">
-        <BookCover
-          alt={book.title}
-          coverId={book.coverId}
-          priority
-          title={book.title}
-        />
-        <div className="flex flex-col gap-5">
-          <Badge className="w-fit" variant={bookStatusVariant(book.status)}>
-            {bookStatusLabel(book.status)}
-          </Badge>
+      <section className="grid gap-6 md:grid-cols-[9rem_1fr] md:items-end">
+        <div className="order-2 max-w-36 md:order-1">
+          <BookCover
+            alt={book.title}
+            coverId={book.coverId}
+            priority
+            title={book.title}
+          />
+        </div>
+        <div className="order-1 flex flex-col gap-5 md:order-2">
           <div className="flex flex-col gap-2">
-            <h1 className="text-3xl font-medium tracking-tight md:text-4xl">
+            <h1 className="max-w-[14ch] text-balance text-[2.75rem] font-semibold leading-[0.92] tracking-tight md:text-6xl">
               {book.title}
             </h1>
             {book.subtitle ? (
-              <p className="text-muted-foreground">{book.subtitle}</p>
+              <p className="max-w-[65ch] text-muted-foreground">
+                {book.subtitle}
+              </p>
             ) : null}
-            <p className="text-muted-foreground">{book.author}</p>
+            <p className="max-w-[65ch] text-muted-foreground tabular-nums">
+              {bookStatusLabel(book.status)} · {book.author} · {book.pageCount}{" "}
+              pages · {book.firstPublishYear}
+              {average !== null ? ` · ${formatRating(average)}` : ""}
+            </p>
           </div>
-          <dl className="grid grid-cols-2 gap-4 sm:max-w-sm">
-            <div className="flex flex-col gap-1">
-              <dt className="text-sm text-muted-foreground">Pages</dt>
-              <dd className="text-lg font-medium">{book.pageCount}</dd>
-            </div>
-            <div className="flex flex-col gap-1">
-              <dt className="text-sm text-muted-foreground">Published</dt>
-              <dd className="text-lg font-medium">{book.firstPublishYear}</dd>
-            </div>
-            {average !== null ? (
-              <div className="flex flex-col gap-1">
-                <dt className="text-sm text-muted-foreground">Club rating</dt>
-                <dd className="text-lg font-medium">{formatRating(average)}</dd>
-              </div>
-            ) : null}
-          </dl>
           {book.description ? (
-            <p className="max-w-prose text-sm leading-relaxed text-muted-foreground">
+            <p className="max-w-[65ch] text-base leading-relaxed">
               {book.description}
             </p>
+          ) : null}
+          {viewer.nomination ? (
+            <p className="max-w-prose text-sm leading-relaxed">
+              <span className="text-muted-foreground">
+                {viewer.nomination.nominatorName}:{" "}
+              </span>
+              {viewer.nomination.reason}
+            </p>
+          ) : viewer.canNominate ? (
+            <NominateBookDialog book={{ id: book.id, title: book.title }} />
           ) : null}
           {ownProgress ? (
             <ProgressForm
@@ -121,16 +120,14 @@ export default async function Page({
         </div>
       </section>
       <section className="flex max-w-prose flex-col gap-5">
-        <h2 className="text-xl font-medium tracking-tight">Reviews</h2>
+        <h2 className="text-base font-semibold">Reviews</h2>
         {reviews.length === 0 ? (
           <p className="text-sm text-muted-foreground">
             {canReview
-              ? "Be the first to review this book."
-              : ownReview
-                ? "Your review is published below."
-                : book.status === "readlist"
-                  ? "Reviews open once the club starts this book."
-                  : "No reviews yet."}
+              ? "No reviews yet. Yours can be the first."
+              : book.status === "readlist"
+                ? "Reviews open when the club starts this book."
+                : "No reviews yet."}
           </p>
         ) : (
           <ul className="flex flex-col">
@@ -153,7 +150,9 @@ export default async function Page({
                     </div>
                   </div>
                   {review.body ? (
-                    <p className="text-sm leading-relaxed">{review.body}</p>
+                    <p className="max-w-[65ch] text-base leading-relaxed">
+                      {review.body}
+                    </p>
                   ) : null}
                 </article>
               </li>

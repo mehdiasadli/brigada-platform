@@ -52,6 +52,7 @@ export function BooksCatalog() {
   const [pending, setPending] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [moreFilters, setMoreFilters] = useState(false);
 
   useEffect(() => {
     const timeout = window.setTimeout(() => setAppliedQ(q), 400);
@@ -129,6 +130,12 @@ export function BooksCatalog() {
     };
   }, [query]);
 
+  const filtersOn =
+    minYear !== null ||
+    maxYear !== null ||
+    minPages !== null ||
+    maxPages !== null;
+
   async function loadMore() {
     if (!nextCursor) {
       return;
@@ -162,10 +169,10 @@ export function BooksCatalog() {
   return (
     <div className="flex flex-col gap-8">
       <form
-        className="grid gap-4 md:grid-cols-2 lg:grid-cols-3"
+        className="flex flex-col gap-4"
         onSubmit={(event) => event.preventDefault()}
       >
-        <Field className="md:col-span-2 lg:col-span-3">
+        <Field>
           <FieldLabel htmlFor="catalog-search">Search</FieldLabel>
           <Input
             id="catalog-search"
@@ -174,107 +181,124 @@ export function BooksCatalog() {
             value={q}
           />
         </Field>
-        <Field>
-          <FieldLabel>Status</FieldLabel>
-          <Select
-            items={[...STATUSES]}
-            onValueChange={(value) => {
-              if (value) {
-                setStatus(value);
-              }
-            }}
-            value={status}
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_auto] lg:items-end">
+          <Field>
+            <FieldLabel>Status</FieldLabel>
+            <Select
+              items={[...STATUSES]}
+              onValueChange={(value) => {
+                if (value) {
+                  setStatus(value);
+                }
+              }}
+              value={status}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {STATUSES.map((item) => (
+                  <SelectItem key={item.value} value={item.value}>
+                    {item.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Field>
+          <Field>
+            <FieldLabel>Sort</FieldLabel>
+            <Select
+              items={[...SORTS]}
+              onValueChange={(value) => {
+                if (value) {
+                  setSortKey(value);
+                }
+              }}
+              value={sortKey}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {SORTS.map((item) => (
+                  <SelectItem key={item.value} value={item.value}>
+                    {item.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Field>
+          <Button
+            onClick={() => setMoreFilters((current) => !current)}
+            type="button"
+            variant="outline"
           >
-            <SelectTrigger className="w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {STATUSES.map((item) => (
-                <SelectItem key={item.value} value={item.value}>
-                  {item.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </Field>
-        <Field>
-          <FieldLabel>Sort</FieldLabel>
-          <Select
-            items={[...SORTS]}
-            onValueChange={(value) => {
-              if (value) {
-                setSortKey(value);
-              }
-            }}
-            value={sortKey}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {SORTS.map((item) => (
-                <SelectItem key={item.value} value={item.value}>
-                  {item.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </Field>
-        <Field>
-          <FieldLabel htmlFor="min-year">Min year</FieldLabel>
-          <NumberInput
-            allowEmpty
-            id="min-year"
-            max={2100}
-            min={1000}
-            onValueChange={setMinYear}
-            placeholder="From"
-            value={minYear}
-          />
-        </Field>
-        <Field>
-          <FieldLabel htmlFor="max-year">Max year</FieldLabel>
-          <NumberInput
-            allowEmpty
-            id="max-year"
-            max={2100}
-            min={1000}
-            onValueChange={setMaxYear}
-            placeholder="To"
-            value={maxYear}
-          />
-        </Field>
-        <Field>
-          <FieldLabel htmlFor="min-pages">Min pages</FieldLabel>
-          <NumberInput
-            allowEmpty
-            id="min-pages"
-            max={20_000}
-            min={1}
-            onValueChange={setMinPages}
-            placeholder="From"
-            value={minPages}
-          />
-        </Field>
-        <Field>
-          <FieldLabel htmlFor="max-pages">Max pages</FieldLabel>
-          <NumberInput
-            allowEmpty
-            id="max-pages"
-            max={20_000}
-            min={1}
-            onValueChange={setMaxPages}
-            placeholder="To"
-            value={maxPages}
-          />
-        </Field>
+            {moreFilters
+              ? "Hide filters"
+              : filtersOn
+                ? "Filters on"
+                : "More filters"}
+          </Button>
+        </div>
+        {moreFilters ? (
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <Field>
+              <FieldLabel htmlFor="min-year">From year</FieldLabel>
+              <NumberInput
+                allowEmpty
+                id="min-year"
+                max={2100}
+                min={1000}
+                onValueChange={setMinYear}
+                placeholder="From"
+                value={minYear}
+              />
+            </Field>
+            <Field>
+              <FieldLabel htmlFor="max-year">To year</FieldLabel>
+              <NumberInput
+                allowEmpty
+                id="max-year"
+                max={2100}
+                min={1000}
+                onValueChange={setMaxYear}
+                placeholder="To"
+                value={maxYear}
+              />
+            </Field>
+            <Field>
+              <FieldLabel htmlFor="min-pages">Min pages</FieldLabel>
+              <NumberInput
+                allowEmpty
+                id="min-pages"
+                max={20_000}
+                min={1}
+                onValueChange={setMinPages}
+                placeholder="From"
+                value={minPages}
+              />
+            </Field>
+            <Field>
+              <FieldLabel htmlFor="max-pages">Max pages</FieldLabel>
+              <NumberInput
+                allowEmpty
+                id="max-pages"
+                max={20_000}
+                min={1}
+                onValueChange={setMaxPages}
+                placeholder="To"
+                value={maxPages}
+              />
+            </Field>
+          </div>
+        ) : null}
       </form>
       {error ? <p className="text-sm text-destructive">{error}</p> : null}
       {pending ? (
         <p className="text-sm text-muted-foreground">Loading books…</p>
       ) : items.length === 0 ? (
-        <Empty className="border">
-          <EmptyHeader>
+        <Empty className="items-start rounded-none p-0 text-left">
+          <EmptyHeader className="max-w-none items-start text-left">
             <EmptyTitle>No books match</EmptyTitle>
             <EmptyDescription>
               Try a different search or clear the filters.
@@ -282,7 +306,7 @@ export function BooksCatalog() {
           </EmptyHeader>
         </Empty>
       ) : (
-        <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+        <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3">
           {items.map((book) => (
             <BookCard book={book} key={book.id} />
           ))}

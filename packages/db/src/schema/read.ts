@@ -23,6 +23,16 @@ export const readBookStatusEnum = pgEnum(
   READ_BOOK_STATUS_VALUES,
 );
 
+export const READ_NOMINATION_STATUS_VALUES = [
+  "open",
+  "parked",
+  "rejected",
+] as const;
+export const readNominationStatusEnum = pgEnum(
+  "read_nomination_status",
+  READ_NOMINATION_STATUS_VALUES,
+);
+
 export const READ_SESSION_STATUS_VALUES = [
   "not_started",
   "voting",
@@ -190,6 +200,33 @@ export const readReview = pgTable(
   ],
 );
 
+export const readNomination = pgTable(
+  "read_nomination",
+  {
+    id: uuid("id").default(sql`pg_catalog.gen_random_uuid()`).primaryKey(),
+    bookId: uuid("book_id")
+      .notNull()
+      .references(() => readBook.id),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    reason: text("reason").notNull(),
+    status: readNominationStatusEnum("status").default("open").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [
+    uniqueIndex("read_nomination_open_book_idx")
+      .on(table.bookId)
+      .where(sql`${table.status} = 'open'`),
+    index("read_nomination_book_idx").on(table.bookId),
+    index("read_nomination_status_idx").on(table.status),
+  ],
+);
+
 export const readMemberRelations = relations(readMember, ({ one }) => ({
   user: one(user, {
     fields: [readMember.userId],
@@ -201,6 +238,18 @@ export const readBookRelations = relations(readBook, ({ many }) => ({
   sessions: many(readSession),
   candidates: many(readSessionCandidate),
   reviews: many(readReview),
+  nominations: many(readNomination),
+}));
+
+export const readNominationRelations = relations(readNomination, ({ one }) => ({
+  book: one(readBook, {
+    fields: [readNomination.bookId],
+    references: [readBook.id],
+  }),
+  user: one(user, {
+    fields: [readNomination.userId],
+    references: [user.id],
+  }),
 }));
 
 export const readSessionRelations = relations(readSession, ({ one, many }) => ({

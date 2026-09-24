@@ -1,26 +1,27 @@
-import { Badge } from "@brigada/ui/components/badge";
 import Link from "next/link";
 import type { ReadBook } from "../lib/read-types";
-import { bookStatusLabel, bookStatusVariant } from "../lib/status";
+import { bookStatusLabel } from "../lib/status";
 import { BookCover } from "./book-cover";
 
 export function BookCard({ book }: { book: ReadBook }) {
+  const reading = book.status === "reading";
+
   return (
-    <Link className="group flex flex-col gap-3" href={`/books/${book.slug}`}>
-      <div className="transition-transform duration-200 ease-out group-hover:scale-[1.02] group-active:scale-[0.99] motion-reduce:transform-none">
-        <BookCover coverId={book.coverId} title={book.title} />
-      </div>
-      <div className="flex flex-col gap-1.5">
-        <p className="line-clamp-2 font-medium group-hover:underline">
-          {book.title}
-        </p>
-        <p className="line-clamp-1 text-sm text-muted-foreground">
-          {book.author}
-        </p>
-        <Badge className="w-fit" variant={bookStatusVariant(book.status)}>
-          {bookStatusLabel(book.status)}
-        </Badge>
-      </div>
+    <Link className="group flex flex-col gap-2" href={`/books/${book.slug}`}>
+      <BookCover coverId={book.coverId} title={book.title} />
+      <p
+        className={
+          reading
+            ? "line-clamp-2 font-medium underline decoration-primary decoration-2 underline-offset-4"
+            : "line-clamp-2 font-medium group-hover:underline group-hover:decoration-primary group-hover:underline-offset-4"
+        }
+      >
+        {book.title}
+      </p>
+      <p className="line-clamp-2 text-sm text-muted-foreground">
+        {book.author}
+        {book.status === "readlist" ? "" : ` · ${bookStatusLabel(book.status)}`}
+      </p>
     </Link>
   );
 }

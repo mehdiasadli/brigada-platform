@@ -4,7 +4,11 @@ import { ConflictException, NotFoundException } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
 import { ReadBooksService } from "./books.service";
 import type { ReadBook } from "./books.types";
-import { OPEN_LIBRARY, READ_BOOKS_REPOSITORY } from "./read.constants";
+import {
+  OPEN_LIBRARY,
+  READ_BOOKS_REPOSITORY,
+  READ_NOMINATIONS_REPOSITORY,
+} from "./read.constants";
 
 const book: ReadBook = {
   id: "22222222-2222-4222-8222-222222222222",
@@ -60,6 +64,12 @@ async function createService(
       ReadBooksService,
       { provide: READ_BOOKS_REPOSITORY, useValue: store },
       { provide: OPEN_LIBRARY, useValue: { search } },
+      {
+        provide: READ_NOMINATIONS_REPOSITORY,
+        useValue: {
+          findOpenByBookId: mock(() => Promise.resolve(null)),
+        },
+      },
     ],
   }).compile();
 

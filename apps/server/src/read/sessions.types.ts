@@ -13,6 +13,8 @@ export type ReadSessionCandidate = {
   coverId: number | null;
   slug: string | null;
   discordAnswerId: number | null;
+  nominationReason: string | null;
+  nominatorName: string | null;
 };
 
 export type ReadSessionReaderProgress = {

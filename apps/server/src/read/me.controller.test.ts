@@ -4,6 +4,7 @@ import { NotFoundException } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
 import { SESSION_READER } from "../users/users.constants";
 import { ReadMeController } from "./me.controller";
+import { ReadNominationsService } from "./nominations.service";
 import { READ_MEMBERS_REPOSITORY } from "./read.constants";
 import { ReadMemberGuard } from "./read-member.guard";
 import { ReadSessionsService } from "./sessions.service";
@@ -16,6 +17,7 @@ test("returns 404 when there is no open session", async () => {
     controllers: [ReadMeController],
     providers: [
       { provide: ReadSessionsService, useValue: { currentForMember } },
+      { provide: ReadNominationsService, useValue: {} },
       ReadMemberGuard,
       { provide: SESSION_READER, useValue: { getSession: mock() } },
       { provide: READ_MEMBERS_REPOSITORY, useValue: { findByUserId: mock() } },

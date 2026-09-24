@@ -10,8 +10,13 @@ import type {
   ReadBooksStore,
   UpdateReadBook,
 } from "./books.types";
+import type { OpenNomination } from "./nominations.types";
 import type { OpenLibrarySearch } from "./open-library";
-import { OPEN_LIBRARY, READ_BOOKS_REPOSITORY } from "./read.constants";
+import {
+  OPEN_LIBRARY,
+  READ_BOOKS_REPOSITORY,
+  READ_NOMINATIONS_REPOSITORY,
+} from "./read.constants";
 import { slugifyTitle, uniquifySlug } from "./slug";
 
 @Injectable()
@@ -19,6 +24,10 @@ export class ReadBooksService {
   constructor(
     @Inject(READ_BOOKS_REPOSITORY) private readonly books: ReadBooksStore,
     @Inject(OPEN_LIBRARY) private readonly openLibrary: OpenLibrarySearch,
+    @Inject(READ_NOMINATIONS_REPOSITORY)
+    private readonly nominations: {
+      findOpenByBookId(bookId: string): Promise<OpenNomination | null>;
+    },
   ) {}
 
   list() {
@@ -39,7 +48,18 @@ export class ReadBooksService {
       throw new NotFoundException("Book not found");
     }
 
-    const reviews = await this.books.listReviews(book.id);
+    const [reviews, open] = await Promise.all([
+      this.books.listReviews(book.id),
+      this.nominations.findOpenByBookId(book.id),
+    ]);
+    const nomination = open
+      ? {
+          reason: open.reason,
+          nominatorName: open.nominatorName,
+          mine: userId === open.userId,
+        }
+      : null;
+
     if (!userId) {
       return {
         book,
@@ -47,8 +67,10 @@ export class ReadBooksService {
         viewer: {
           canReview: false,
           canUpdateProgress: false,
+          canNominate: !nomination,
           review: null,
           progress: null,
+          nomination,
         },
       };
     }
@@ -64,9 +86,11 @@ export class ReadBooksService {
       viewer: {
         canReview:
           !review && (book.status === "reading" || book.status === "completed"),
-        canUpdateProgress: Boolean(progress) && !progress.isCompleted,
+        canUpdateProgress: progress !== null && !progress.isCompleted,
+        canNominate: !nomination,
         review,
         progress,
+        nomination,
       },
     };
   }
