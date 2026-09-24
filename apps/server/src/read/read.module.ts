@@ -10,11 +10,15 @@ import { ReadMeController } from "./me.controller";
 import { ReadMembersController } from "./members.controller";
 import { ReadMembersRepository } from "./members.repository";
 import { ReadMembersService } from "./members.service";
+import { ReadNominationsController } from "./nominations.controller";
+import { ReadNominationsRepository } from "./nominations.repository";
+import { ReadNominationsService } from "./nominations.service";
 import { OpenLibraryClient } from "./open-library";
 import {
   OPEN_LIBRARY,
   READ_BOOKS_REPOSITORY,
   READ_MEMBERS_REPOSITORY,
+  READ_NOMINATIONS_REPOSITORY,
   READ_SESSIONS_REPOSITORY,
   VOTE_PUBLISHER,
 } from "./read.constants";
@@ -28,6 +32,7 @@ import { ReadSessionsService } from "./sessions.service";
   controllers: [
     ReadMembersController,
     ReadBooksController,
+    ReadNominationsController,
     ReadSessionsController,
     ReadMeController,
     ReadCatalogController,
@@ -39,6 +44,12 @@ import { ReadSessionsService } from "./sessions.service";
     ReadBooksService,
     ReadBooksRepository,
     { provide: READ_BOOKS_REPOSITORY, useExisting: ReadBooksRepository },
+    ReadNominationsService,
+    ReadNominationsRepository,
+    {
+      provide: READ_NOMINATIONS_REPOSITORY,
+      useExisting: ReadNominationsRepository,
+    },
     OpenLibraryClient,
     { provide: OPEN_LIBRARY, useExisting: OpenLibraryClient },
     ReadSessionsService,

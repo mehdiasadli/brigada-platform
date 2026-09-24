@@ -169,6 +169,32 @@ export function updateReadBook(
   });
 }
 
+export type ReadNomination = {
+  id: string;
+  bookTitle: string;
+  bookAuthor: string;
+  nominatorName: string;
+  reason: string;
+};
+
+export function readNominationsQueryKey() {
+  return ["read-nominations"] as const;
+}
+
+export function listReadNominations() {
+  return readAdminFetch<ReadNomination[]>("/api/admin/read/nominations");
+}
+
+export function setReadNominationStatus(
+  id: string,
+  status: "parked" | "rejected",
+) {
+  return readAdminFetch<unknown>(`/api/admin/read/nominations/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify({ status }),
+  });
+}
+
 export function readSessionsQueryKey() {
   return ["read-sessions"] as const;
 }

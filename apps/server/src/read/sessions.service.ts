@@ -90,7 +90,7 @@ export class ReadSessionsService {
 
     const blocked = books.find((book) => book.status !== "readlist");
     if (blocked) {
-      throw new BadRequestException("Only unread list books can be nominated");
+      throw new BadRequestException("Only books on the list can go on a vote");
     }
 
     await this.sessions.replaceCandidates(

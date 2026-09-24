@@ -10,6 +10,8 @@ import {
   UseGuards,
 } from "@nestjs/common";
 import type { Request } from "express";
+import { parseNominateBook } from "./nominations.query";
+import { ReadNominationsService } from "./nominations.service";
 import { ReadMemberGuard } from "./read-member.guard";
 import { parseProgress, parseReview } from "./sessions.query";
 import { ReadSessionsService } from "./sessions.service";
@@ -19,6 +21,8 @@ import { ReadSessionsService } from "./sessions.service";
 export class ReadMeController {
   constructor(
     @Inject(ReadSessionsService) private readonly sessions: ReadSessionsService,
+    @Inject(ReadNominationsService)
+    private readonly nominations: ReadNominationsService,
   ) {}
 
   @Get("session")
@@ -41,6 +45,17 @@ export class ReadMeController {
     return this.sessions.setProgress(
       requireUserId(request),
       parseProgress(body),
+    );
+  }
+
+  @Post("nominations")
+  nominate(
+    @Req() request: Request & { userId?: string },
+    @Body() body: unknown,
+  ) {
+    return this.nominations.nominate(
+      requireUserId(request),
+      parseNominateBook(body),
     );
   }
 

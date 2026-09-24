@@ -28,6 +28,7 @@ import {
   updateReadBook,
 } from "../../../../lib/read-admin";
 import { BookSheet } from "./book-sheet";
+import { OpenNominations } from "./nominations";
 
 function bookStatusLabel(status: ReadBook["status"]) {
   switch (status) {
@@ -115,6 +116,7 @@ export function ReadBooksPage() {
           adding.
         </p>
       </div>
+      <OpenNominations />
       <ActionError
         error={firstError(
           books.error,

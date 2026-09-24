@@ -45,14 +45,19 @@ export default async function Page({
   return (
     <main className="flex flex-col gap-6">
       <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-medium">{profile.user.name}</h1>
+        <h1 className="text-balance text-[2.75rem] font-semibold leading-[0.92] tracking-tight md:text-6xl">
+          {profile.user.name}
+        </h1>
         <p className="text-sm text-muted-foreground">
           @{profile.user.username} · member since{" "}
           {format(parseISO(profile.memberSince), "d MMM yyyy")}
         </p>
       </div>
       <section className="flex flex-col gap-3">
-        <h2 className="text-sm font-medium">Reviews</h2>
+        <h2 className="text-base font-semibold">Reviews</h2>
+        {profile.reviews.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No reviews yet.</p>
+        ) : null}
         {profile.reviews.map((review) => (
           <article className="flex flex-col gap-1" key={review.id}>
             <Link

@@ -8,7 +8,7 @@ import {
   UseGuards,
 } from "@nestjs/common";
 import type { Request } from "express";
-import { parseCatalogQuery } from "./books.query";
+import { parseCatalogQuery, parseSearchBooksQuery } from "./books.query";
 import { ReadBooksService } from "./books.service";
 import { ReadMembersService } from "./members.service";
 import { ReadMemberGuard } from "./read-member.guard";
@@ -32,6 +32,11 @@ export class ReadCatalogController {
   @Get("sessions/:id")
   getSession(@Param("id") id: string) {
     return this.sessions.getForMember(parseReadSessionId(id));
+  }
+
+  @Get("books/search")
+  searchBooks(@Query() query: Record<string, string | undefined>) {
+    return this.books.search(parseSearchBooksQuery(query).q);
   }
 
   @Get("books")

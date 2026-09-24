@@ -1,4 +1,3 @@
-import { Badge } from "@brigada/ui/components/badge";
 import { format, parseISO } from "date-fns";
 import Link from "next/link";
 import type { MemberSessionSummary } from "../lib/read-types";
@@ -19,7 +18,7 @@ export function SessionCard({ session }: { session: MemberSessionSummary }) {
 
   return (
     <Link
-      className="grid grid-cols-[4.5rem_1fr] gap-4 border-b py-4 last:border-b-0 hover:bg-muted/40"
+      className="group grid grid-cols-[3.25rem_1fr] items-start gap-4 border-b border-foreground/15 py-4 last:border-b-0"
       href={`/sessions/${session.id}`}
     >
       <BookCover
@@ -27,10 +26,7 @@ export function SessionCard({ session }: { session: MemberSessionSummary }) {
         title={session.book?.title ?? "Session"}
       />
       <span className="flex min-w-0 flex-col gap-1">
-        <Badge className="w-fit" variant="secondary">
-          {sessionStatusLabel(session.status)}
-        </Badge>
-        <span className="font-medium">
+        <span className="font-medium group-hover:underline group-hover:decoration-primary group-hover:underline-offset-4">
           {session.book?.title ?? "No book yet"}
         </span>
         {session.book ? (
@@ -39,10 +35,10 @@ export function SessionCard({ session }: { session: MemberSessionSummary }) {
           </span>
         ) : null}
         <span className="text-sm text-muted-foreground">
-          {started ? `Started ${started}` : null}
-          {started && finished ? " · " : null}
-          {finished ? `Finished ${finished}` : null}
-          {!started && !finished ? `${session.readerCount} readers` : null}
+          {sessionStatusLabel(session.status)}
+          {started ? ` · Started ${started}` : ""}
+          {finished ? ` · Finished ${finished}` : ""}
+          {!started && !finished ? ` · ${session.readerCount} readers` : ""}
         </span>
       </span>
     </Link>

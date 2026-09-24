@@ -2,6 +2,7 @@ import { db } from "@brigada/db";
 import {
   readBook,
   readMember,
+  readNomination,
   readProgress,
   readReview,
   readSession,
@@ -181,7 +182,10 @@ export class ReadSessionsRepository implements ReadSessionsStore {
 
     return rows.map((row) => {
       const book = books.find((item) => item.id === row.bookId);
-      return toCandidate(row, book?.coverId ?? null, book?.slug ?? null);
+      return toCandidate(row, book?.coverId ?? null, book?.slug ?? null, {
+        reason: null,
+        nominatorName: null,
+      });
     });
   }
 
@@ -427,12 +431,27 @@ export class ReadSessionsRepository implements ReadSessionsStore {
         candidate: readSessionCandidate,
         coverId: readBook.coverId,
         slug: readBook.slug,
+        nominationReason: readNomination.reason,
+        nominatorName: user.name,
       })
       .from(readSessionCandidate)
       .innerJoin(readBook, eq(readBook.id, readSessionCandidate.bookId))
+      .leftJoin(
+        readNomination,
+        and(
+          eq(readNomination.bookId, readSessionCandidate.bookId),
+          eq(readNomination.status, "open"),
+        ),
+      )
+      .leftJoin(user, eq(user.id, readNomination.userId))
       .where(eq(readSessionCandidate.sessionId, sessionId));
 
-    return rows.map((row) => toCandidate(row.candidate, row.coverId, row.slug));
+    return rows.map((row) =>
+      toCandidate(row.candidate, row.coverId, row.slug, {
+        reason: row.nominationReason,
+        nominatorName: row.nominatorName,
+      }),
+    );
   }
 
   private async listReviewsByBook(bookId: string) {
@@ -466,6 +485,7 @@ function toCandidate(
   row: typeof readSessionCandidate.$inferSelect,
   coverId: number | null,
   slug: string | null,
+  nomination: { reason: string | null; nominatorName: string | null },
 ): ReadSessionCandidate {
   return {
     id: row.id,
@@ -477,5 +497,7 @@ function toCandidate(
     coverId,
     slug,
     discordAnswerId: row.discordAnswerId,
+    nominationReason: nomination.reason,
+    nominatorName: nomination.nominatorName,
   };
 }

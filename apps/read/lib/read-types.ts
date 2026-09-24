@@ -52,6 +52,8 @@ export type MemberSession = {
     coverId: number | null;
     slug: string | null;
     bookId?: string;
+    nominationReason: string | null;
+    nominatorName: string | null;
   }>;
   readers: MemberSessionReader[];
   averageRating: number | null;
@@ -98,11 +100,17 @@ export type BookPage = {
   viewer: {
     canReview: boolean;
     canUpdateProgress: boolean;
+    canNominate: boolean;
     review: { id: string; rating: number; body: string | null } | null;
     progress: {
       percentage: number;
       notes: string | null;
       isCompleted: boolean;
+    } | null;
+    nomination: {
+      reason: string;
+      nominatorName: string;
+      mine: boolean;
     } | null;
   };
 };
