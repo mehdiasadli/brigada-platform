@@ -13,7 +13,11 @@ import type { Request } from "express";
 import { parseNominateBook } from "./nominations.query";
 import { ReadNominationsService } from "./nominations.service";
 import { ReadMemberGuard } from "./read-member.guard";
-import { parseProgress, parseReview } from "./sessions.query";
+import {
+  parseParticipation,
+  parseProgress,
+  parseReview,
+} from "./sessions.query";
 import { ReadSessionsService } from "./sessions.service";
 
 @Controller("api/read/me")
@@ -35,6 +39,17 @@ export class ReadMeController {
     }
 
     return current;
+  }
+
+  @Patch("participation")
+  setParticipation(
+    @Req() request: Request & { userId?: string },
+    @Body() body: unknown,
+  ) {
+    return this.sessions.setMyParticipation(
+      requireUserId(request),
+      parseParticipation(body),
+    );
   }
 
   @Patch("progress")

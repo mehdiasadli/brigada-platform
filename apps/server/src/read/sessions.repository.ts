@@ -216,6 +216,44 @@ export class ReadSessionsRepository implements ReadSessionsStore {
       .values(userIds.map((userId) => ({ sessionId, userId })));
   }
 
+  async isOnOpenSlate(bookId: string) {
+    const [row] = await db
+      .select({ id: readSessionCandidate.id })
+      .from(readSessionCandidate)
+      .innerJoin(
+        readSession,
+        eq(readSession.id, readSessionCandidate.sessionId),
+      )
+      .where(
+        and(
+          eq(readSessionCandidate.bookId, bookId),
+          inArray(readSession.status, ["not_started", "voting"]),
+        ),
+      )
+      .limit(1);
+
+    return Boolean(row);
+  }
+
+  async setParticipation(
+    sessionId: string,
+    userId: string,
+    participation: ReadSessionReader["participation"],
+  ) {
+    const updated = await db
+      .update(readSessionReader)
+      .set({ participation })
+      .where(
+        and(
+          eq(readSessionReader.sessionId, sessionId),
+          eq(readSessionReader.userId, userId),
+        ),
+      )
+      .returning({ id: readSessionReader.id });
+
+    return updated.length > 0;
+  }
+
   async removeReader(sessionId: string, userId: string) {
     const deleted = await db
       .delete(readSessionReader)
@@ -472,6 +510,7 @@ export class ReadSessionsRepository implements ReadSessionsStore {
         username: user.username,
         name: user.name,
         image: user.image,
+        participation: readSessionReader.participation,
       })
       .from(readSessionReader)
       .innerJoin(user, eq(user.id, readSessionReader.userId))

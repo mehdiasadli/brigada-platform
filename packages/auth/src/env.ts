@@ -10,7 +10,7 @@ export const env = createEnv({
     AUTH_TRUSTED_ORIGINS: z
       .string()
       .default(
-        "http://localhost:3502,http://localhost:3501,http://localhost:3500,http://localhost:4000,https://auth.brigada.com,https://www.brigada.com,https://admin.brigada.com,https://read.brigada.com",
+        "http://localhost:3503,http://localhost:3502,http://localhost:3501,http://localhost:3500,http://localhost:4000,https://auth.brigada.com,https://www.brigada.com,https://admin.brigada.com,https://read.brigada.com",
       )
       .transform((value) =>
         value

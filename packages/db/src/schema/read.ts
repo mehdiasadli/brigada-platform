@@ -33,6 +33,9 @@ export const readNominationStatusEnum = pgEnum(
   READ_NOMINATION_STATUS_VALUES,
 );
 
+export const READ_PARTICIPATION_VALUES = ["reading", "sat_out", "dnf"] as const;
+export type ReadParticipation = (typeof READ_PARTICIPATION_VALUES)[number];
+
 export const READ_SESSION_STATUS_VALUES = [
   "not_started",
   "voting",
@@ -136,6 +139,10 @@ export const readSessionReader = pgTable(
     userId: uuid("user_id")
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
+    participation: text("participation")
+      .$type<ReadParticipation>()
+      .default("reading")
+      .notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },
   (table) => [

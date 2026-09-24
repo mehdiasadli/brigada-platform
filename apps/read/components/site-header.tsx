@@ -17,13 +17,13 @@ export async function SiteHeader() {
   const signOutHref = authAppUrl(env.NEXT_PUBLIC_APP_URL);
 
   return (
-    <header className="sticky top-0 z-40 bg-[#0c0c0c]">
+    <header className="sticky top-0 z-40 border-b border-foreground/15 bg-background">
       <nav className="mx-auto flex min-h-14 max-w-2xl flex-wrap items-center gap-x-4 gap-y-2 px-5 py-3 text-sm md:px-10">
         <SiteNav />
         {user ? (
           <div className="ml-auto flex items-center gap-2">
             <Link
-              className="flex items-center gap-2 text-[#f4f4f1]"
+              className="flex items-center gap-2"
               href={user.username ? `/members/${user.username}` : "/members"}
             >
               <Avatar size="sm">
@@ -34,10 +34,7 @@ export async function SiteHeader() {
               </Avatar>
               <span className="hidden sm:inline">{user.name}</span>
             </Link>
-            <LogoutButton
-              className="text-[#f4f4f1] hover:bg-white/10 hover:text-[#f4f4f1]"
-              href={signOutHref}
-            />
+            <LogoutButton href={signOutHref} />
           </div>
         ) : null}
       </nav>

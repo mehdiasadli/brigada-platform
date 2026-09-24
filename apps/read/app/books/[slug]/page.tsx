@@ -1,12 +1,12 @@
-import { Separator } from "@brigada/ui/components/separator";
-import { StarRating } from "@brigada/ui/components/star-rating";
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { BookCover } from "../../../components/book-cover";
 import { NominateBookDialog } from "../../../components/nominate-dialog";
 import { ProgressForm } from "../../../components/progress-form";
+import { RatingChart } from "../../../components/rating-chart";
+import { ReviewBlock } from "../../../components/review-block";
 import { ReviewForm } from "../../../components/review-form";
+import { ratingBuckets } from "../../../lib/rating-buckets";
 import { readJson } from "../../../lib/read-api";
 import type { BookPage } from "../../../lib/read-types";
 import { requireReadMember } from "../../../lib/require-member";
@@ -32,10 +32,6 @@ export async function generateMetadata({
   };
 }
 
-function formatRating(rating: number) {
-  return `${rating / 2} / 5`;
-}
-
 export default async function Page({
   params,
   searchParams,
@@ -55,6 +51,7 @@ export default async function Page({
   const canReview = viewer?.canReview ?? false;
   const ownReview = viewer?.review ?? null;
   const ownProgress = viewer?.progress ?? null;
+  const buckets = ratingBuckets(reviews);
   const average =
     reviews.length === 0
       ? null
@@ -82,11 +79,27 @@ export default async function Page({
                 {book.subtitle}
               </p>
             ) : null}
-            <p className="max-w-[65ch] text-muted-foreground tabular-nums">
-              {bookStatusLabel(book.status)} · {book.author} · {book.pageCount}{" "}
-              pages · {book.firstPublishYear}
-              {average !== null ? ` · ${formatRating(average)}` : ""}
-            </p>
+            <p className="max-w-[65ch]">{book.author}</p>
+            <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm sm:grid-cols-4">
+              <div>
+                <dt className="text-muted-foreground">Status</dt>
+                <dd>{bookStatusLabel(book.status)}</dd>
+              </div>
+              <div>
+                <dt className="text-muted-foreground">Pages</dt>
+                <dd className="tabular-nums">{book.pageCount}</dd>
+              </div>
+              <div>
+                <dt className="text-muted-foreground">Year</dt>
+                <dd className="tabular-nums">{book.firstPublishYear}</dd>
+              </div>
+              {average !== null ? (
+                <div>
+                  <dt className="text-muted-foreground">Average</dt>
+                  <dd className="tabular-nums">{average / 2} / 5</dd>
+                </div>
+              ) : null}
+            </dl>
           </div>
           {book.description ? (
             <p className="max-w-[65ch] text-base leading-relaxed">
@@ -119,7 +132,7 @@ export default async function Page({
           ) : null}
         </div>
       </section>
-      <section className="flex max-w-prose flex-col gap-5">
+      <section className="flex flex-col gap-6">
         <h2 className="text-base font-semibold">Reviews</h2>
         {reviews.length === 0 ? (
           <p className="text-sm text-muted-foreground">
@@ -130,34 +143,21 @@ export default async function Page({
                 : "No reviews yet."}
           </p>
         ) : (
-          <ul className="flex flex-col">
-            {reviews.map((review, index) => (
-              <li key={review.id}>
-                {index > 0 ? <Separator className="my-5" /> : null}
-                <article className="flex flex-col gap-1.5">
-                  <div className="flex items-center justify-between gap-3">
-                    <Link
-                      className="font-medium hover:underline"
-                      href={`/members/${review.username}`}
-                    >
-                      {review.name}
-                    </Link>
-                    <div className="flex items-center gap-2">
-                      <StarRating value={review.rating} />
-                      <p className="text-sm text-muted-foreground">
-                        {formatRating(review.rating)}
-                      </p>
-                    </div>
-                  </div>
-                  {review.body ? (
-                    <p className="max-w-[65ch] text-base leading-relaxed">
-                      {review.body}
-                    </p>
-                  ) : null}
-                </article>
-              </li>
-            ))}
-          </ul>
+          <>
+            <RatingChart rows={buckets} />
+            <ul className="border-t border-foreground/15">
+              {reviews.map((review) => (
+                <li key={review.id}>
+                  <ReviewBlock
+                    body={review.body}
+                    href={`/members/${review.username}`}
+                    rating={review.rating}
+                    title={review.name}
+                  />
+                </li>
+              ))}
+            </ul>
+          </>
         )}
       </section>
     </main>

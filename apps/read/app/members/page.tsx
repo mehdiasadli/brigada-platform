@@ -52,8 +52,8 @@ export default async function Page() {
           </EmptyHeader>
         </Empty>
       ) : (
-        <ol className="border-t border-foreground/15">
-          {members.map((member, index) => {
+        <ul className="border-t border-foreground/15">
+          {members.map((member) => {
             const you = member.username === me;
             return (
               <li key={member.username}>
@@ -65,9 +65,6 @@ export default async function Page() {
                   }
                   href={`/members/${member.username}`}
                 >
-                  <span className="w-8 font-mono text-xs tabular-nums text-muted-foreground">
-                    {String(index + 1).padStart(2, "0")}
-                  </span>
                   <Avatar size="lg">
                     {member.image ? (
                       <AvatarImage alt={member.name} src={member.image} />
@@ -92,7 +89,7 @@ export default async function Page() {
               </li>
             );
           })}
-        </ol>
+        </ul>
       )}
     </main>
   );

@@ -2,9 +2,10 @@ import { format, parseISO } from "date-fns";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { AlsoOnTheVote } from "../../../components/also-on-the-vote";
 import { BookCover } from "../../../components/book-cover";
+import { ParticipationForm } from "../../../components/participation-form";
 import { ReaderBoard } from "../../../components/reader-board";
-import { VoteChoice } from "../../../components/vote-choice";
 import { readJson } from "../../../lib/read-api";
 import type { MemberSession } from "../../../lib/read-types";
 import { requireReadMember } from "../../../lib/require-member";
@@ -16,10 +17,6 @@ function formatDate(value: string | null, withTime = false) {
   }
 
   return format(parseISO(value), withTime ? "d MMM yyyy, HH:mm" : "d MMM yyyy");
-}
-
-function formatRating(rating: number) {
-  return `${rating / 2} / 5`;
 }
 
 export async function generateMetadata({
@@ -91,37 +88,54 @@ export default async function Page({
           <h1 className="max-w-[14ch] text-balance text-[2.75rem] font-semibold leading-[0.92] tracking-tight md:text-6xl">
             {session.book?.title ?? "Session"}
           </h1>
-          <p className="text-muted-foreground">
-            {sessionStatusLabel(session.status)}
-            {session.book
-              ? ` · ${session.book.author}, ${session.book.pageCount} pages`
-              : null}
-            {session.averageRating !== null
-              ? ` · ${formatRating(session.averageRating)}`
-              : ""}
-          </p>
-          {dates.length > 0 ? (
-            <p className="text-sm text-muted-foreground tabular-nums">
-              {dates.map(([label, value]) => `${label} ${value}`).join(" · ")}
-            </p>
-          ) : null}
+          <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm sm:grid-cols-3">
+            <div>
+              <dt className="text-muted-foreground">Status</dt>
+              <dd>{sessionStatusLabel(session.status)}</dd>
+            </div>
+            {session.book ? (
+              <div>
+                <dt className="text-muted-foreground">Author</dt>
+                <dd>{session.book.author}</dd>
+              </div>
+            ) : null}
+            {session.book ? (
+              <div>
+                <dt className="text-muted-foreground">Pages</dt>
+                <dd className="tabular-nums">{session.book.pageCount}</dd>
+              </div>
+            ) : null}
+            {session.averageRating !== null ? (
+              <div>
+                <dt className="text-muted-foreground">Average</dt>
+                <dd className="tabular-nums">
+                  {session.averageRating / 2} / 5
+                </dd>
+              </div>
+            ) : null}
+            {dates.map(([label, value]) => (
+              <div key={label}>
+                <dt className="text-muted-foreground">{label}</dt>
+                <dd className="tabular-nums">{value}</dd>
+              </div>
+            ))}
+          </dl>
         </div>
       </section>
       {alsoRans.length > 0 ? (
-        <section className="flex flex-col gap-3">
-          <h2 className="text-base font-semibold">
-            {session.book ? "Also on the vote" : "Up for a vote"}
-          </h2>
-          <ol className="border-t border-foreground/15">
-            {alsoRans.map((candidate, index) => (
-              <VoteChoice
-                choice={candidate}
-                index={index + 1}
-                key={candidate.slug ?? candidate.title}
-              />
-            ))}
-          </ol>
-        </section>
+        <AlsoOnTheVote
+          choices={alsoRans}
+          title={session.book ? "Also on the vote" : "Up for a vote"}
+        />
+      ) : null}
+      {session.readers.some((reader) => reader.userId === auth.user.id) ? (
+        <ParticipationForm
+          participation={
+            session.readers.find((reader) => reader.userId === auth.user.id)
+              ?.participation ?? "reading"
+          }
+          sessionStatus={session.status}
+        />
       ) : null}
       <ReaderBoard readers={session.readers} youId={auth.user.id} />
     </main>

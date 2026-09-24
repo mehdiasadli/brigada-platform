@@ -1,0 +1,1 @@
+ALTER TABLE "read_session_reader" ADD COLUMN "participation" text DEFAULT 'reading' NOT NULL;

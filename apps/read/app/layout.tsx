@@ -29,13 +29,11 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en" className={`${fontSans.variable} ${fontMono.variable}`}>
-      <body className="club min-h-dvh bg-[#0c0c0c] font-sans text-[#f4f4f1] antialiased selection:bg-[#d01212] selection:text-[#f4f4f1]">
+      <body className="club min-h-dvh bg-background font-sans text-foreground antialiased selection:bg-primary selection:text-primary-foreground">
         <SiteHeader />
         <Providers>
-          <div className="px-3 pt-2 pb-16 md:px-6">
-            <div className="mx-auto w-full max-w-2xl bg-background text-foreground shadow-[6px_6px_0_#000]">
-              <div className="px-5 py-8 md:px-10 md:py-12">{children}</div>
-            </div>
+          <div className="mx-auto w-full max-w-2xl px-5 py-8 md:px-10 md:py-12">
+            {children}
           </div>
         </Providers>
       </body>

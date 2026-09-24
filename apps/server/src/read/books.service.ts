@@ -16,6 +16,7 @@ import {
   OPEN_LIBRARY,
   READ_BOOKS_REPOSITORY,
   READ_NOMINATIONS_REPOSITORY,
+  READ_SESSIONS_REPOSITORY,
 } from "./read.constants";
 import { slugifyTitle, uniquifySlug } from "./slug";
 
@@ -27,6 +28,10 @@ export class ReadBooksService {
     @Inject(READ_NOMINATIONS_REPOSITORY)
     private readonly nominations: {
       findOpenByBookId(bookId: string): Promise<OpenNomination | null>;
+    },
+    @Inject(READ_SESSIONS_REPOSITORY)
+    private readonly sessions: {
+      isOnOpenSlate(bookId: string): Promise<boolean>;
     },
   ) {}
 
@@ -48,9 +53,10 @@ export class ReadBooksService {
       throw new NotFoundException("Book not found");
     }
 
-    const [reviews, open] = await Promise.all([
+    const [reviews, open, onSlate] = await Promise.all([
       this.books.listReviews(book.id),
       this.nominations.findOpenByBookId(book.id),
+      this.sessions.isOnOpenSlate(book.id),
     ]);
     const nomination = open
       ? {
@@ -67,7 +73,7 @@ export class ReadBooksService {
         viewer: {
           canReview: false,
           canUpdateProgress: false,
-          canNominate: !nomination,
+          canNominate: book.status === "readlist" && !nomination && !onSlate,
           review: null,
           progress: null,
           nomination,
@@ -87,7 +93,7 @@ export class ReadBooksService {
         canReview:
           !review && (book.status === "reading" || book.status === "completed"),
         canUpdateProgress: progress !== null && !progress.isCompleted,
-        canNominate: !nomination,
+        canNominate: book.status === "readlist" && !nomination && !onSlate,
         review,
         progress,
         nomination,
@@ -127,14 +133,7 @@ export class ReadBooksService {
       throw new NotFoundException("Book not found");
     }
 
-    const next = { ...patch };
-    if (patch.title && patch.title !== current.title) {
-      const taken = new Set(await this.books.listSlugs());
-      taken.delete(current.slug);
-      next.slug = uniquifySlug(slugifyTitle(patch.title), taken);
-    }
-
-    const updated = await this.books.update(id, next);
+    const updated = await this.books.update(id, patch);
     if (!updated) {
       throw new NotFoundException("Book not found");
     }
