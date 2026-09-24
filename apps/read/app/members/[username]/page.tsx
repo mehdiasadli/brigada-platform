@@ -1,7 +1,7 @@
 import { format, parseISO } from "date-fns";
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ReviewBlock } from "../../../components/review-block";
 import { readJson } from "../../../lib/read-api";
 import { requireReadMember } from "../../../lib/require-member";
 
@@ -43,35 +43,42 @@ export default async function Page({
   }
 
   return (
-    <main className="flex flex-col gap-6">
-      <div className="flex flex-col gap-1">
+    <main className="flex flex-col gap-10">
+      <div className="flex flex-col gap-4">
         <h1 className="text-balance text-[2.75rem] font-semibold leading-[0.92] tracking-tight md:text-6xl">
           {profile.user.name}
         </h1>
-        <p className="text-sm text-muted-foreground">
-          @{profile.user.username} · member since{" "}
-          {format(parseISO(profile.memberSince), "d MMM yyyy")}
-        </p>
+        <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
+          <div>
+            <dt className="text-muted-foreground">Username</dt>
+            <dd>@{profile.user.username}</dd>
+          </div>
+          <div>
+            <dt className="text-muted-foreground">Member since</dt>
+            <dd className="tabular-nums">
+              {format(parseISO(profile.memberSince), "d MMM yyyy")}
+            </dd>
+          </div>
+        </dl>
       </div>
       <section className="flex flex-col gap-3">
         <h2 className="text-base font-semibold">Reviews</h2>
         {profile.reviews.length === 0 ? (
           <p className="text-sm text-muted-foreground">No reviews yet.</p>
-        ) : null}
-        {profile.reviews.map((review) => (
-          <article className="flex flex-col gap-1" key={review.id}>
-            <Link
-              className="font-medium underline"
-              href={`/books/${review.bookSlug}`}
-            >
-              {review.bookTitle}
-            </Link>
-            <p className="text-sm text-muted-foreground">
-              {review.rating / 2} / 5
-            </p>
-            {review.body ? <p className="text-sm">{review.body}</p> : null}
-          </article>
-        ))}
+        ) : (
+          <ul className="border-t border-foreground/15">
+            {profile.reviews.map((review) => (
+              <li key={review.id}>
+                <ReviewBlock
+                  body={review.body}
+                  href={`/books/${review.bookSlug}`}
+                  rating={review.rating}
+                  title={review.bookTitle}
+                />
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
     </main>
   );

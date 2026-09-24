@@ -19,6 +19,7 @@ export type MemberSessionReader = {
   username: string;
   name: string;
   image: string | null;
+  participation: ReadSessionDetail["readers"][number]["participation"];
   progress: { percentage: number; isCompleted: boolean } | null;
   rating: number | null;
 };
@@ -35,6 +36,7 @@ export type MemberSession = {
   readingDeadline: Date | null;
   discordPollMessageId: string | null;
   discordPollChannelId: string | null;
+  pollUrl: string | null;
   book: MemberSessionBook | null;
   candidates: ReadSessionDetail["candidates"];
   readers: MemberSessionReader[];
@@ -55,12 +57,28 @@ function toMemberBook(book: ReadBook): MemberSessionBook {
   };
 }
 
-export function toMemberSession(session: ReadSessionDetail): MemberSession {
+export function discordPollUrl(
+  guildId: string | null | undefined,
+  channelId: string | null,
+  messageId: string | null,
+) {
+  if (!guildId || !channelId || !messageId) {
+    return null;
+  }
+
+  return `https://discord.com/channels/${guildId}/${channelId}/${messageId}`;
+}
+
+export function toMemberSession(
+  session: ReadSessionDetail,
+  guildId?: string | null,
+): MemberSession {
   const readers = session.readers.map((reader) => ({
     userId: reader.userId,
     username: reader.username,
     name: reader.name,
     image: reader.image,
+    participation: reader.participation,
     progress: reader.progress
       ? {
           percentage: reader.progress.percentage,
@@ -85,6 +103,11 @@ export function toMemberSession(session: ReadSessionDetail): MemberSession {
     readingDeadline: session.readingDeadline,
     discordPollMessageId: session.discordPollMessageId,
     discordPollChannelId: session.discordPollChannelId,
+    pollUrl: discordPollUrl(
+      guildId,
+      session.discordPollChannelId,
+      session.discordPollMessageId,
+    ),
     book: session.book ? toMemberBook(session.book) : null,
     candidates: session.candidates,
     readers,

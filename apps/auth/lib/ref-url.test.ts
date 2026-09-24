@@ -6,6 +6,8 @@ test("accepts the main site and first-party apps, including inner paths", () => 
   expect(isAllowedRefUrl("http://localhost:3501/feed")).toBe(true);
   expect(isAllowedRefUrl("http://localhost:3502")).toBe(true);
   expect(isAllowedRefUrl("http://localhost:3502/users")).toBe(true);
+  expect(isAllowedRefUrl("http://localhost:3503")).toBe(true);
+  expect(isAllowedRefUrl("http://localhost:3503/books")).toBe(true);
   expect(isAllowedRefUrl("https://www.brigada.com/insider")).toBe(true);
   expect(isAllowedRefUrl("https://admin.brigada.com/users")).toBe(true);
   expect(isAllowedRefUrl("https://read.brigada.com/post/1")).toBe(true);
@@ -24,5 +26,8 @@ test("falls back to the main website", () => {
   expect(resolveRefUrl("https://evil.example")).toBe("http://localhost:3501");
   expect(resolveRefUrl("https://www.brigada.com/insider")).toBe(
     "https://www.brigada.com/insider",
+  );
+  expect(resolveRefUrl("http://localhost:3503/books")).toBe(
+    "http://localhost:3503/books",
   );
 });

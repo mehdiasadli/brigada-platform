@@ -28,6 +28,7 @@ export type MemberSessionReader = {
   username: string;
   name: string;
   image: string | null;
+  participation: "reading" | "sat_out" | "dnf";
   progress: { percentage: number; isCompleted: boolean } | null;
   rating: number | null;
 };
@@ -44,6 +45,7 @@ export type MemberSession = {
   readingDeadline: string | null;
   discordPollMessageId: string | null;
   discordPollChannelId: string | null;
+  pollUrl: string | null;
   book: MemberSessionBook | null;
   candidates: Array<{
     title: string;

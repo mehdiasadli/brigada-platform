@@ -1,16 +1,23 @@
 import { calculateReadingDeadline } from "@brigada/db/read";
+import type { ReadParticipation } from "@brigada/db/schema";
 import {
   BadRequestException,
   ConflictException,
   Inject,
   Injectable,
+  Logger,
   NotFoundException,
 } from "@nestjs/common";
+import { DISCORD_ALLOWED_GUILD_ID } from "../discord/discord.constants";
 import type { ReadBook } from "./books.types";
 import { READ_SESSIONS_REPOSITORY, VOTE_PUBLISHER } from "./read.constants";
 import { toMemberSession, toMemberSessionSummary } from "./sessions.member";
-import type { ReadSessionDetail, ReadSessionsStore } from "./sessions.types";
-import type { VotePublisher } from "./vote-publisher";
+import type {
+  ReadSessionCandidate,
+  ReadSessionDetail,
+  ReadSessionsStore,
+} from "./sessions.types";
+import type { PollCount, VotePublisher } from "./vote-publisher";
 
 export const VOTING_HOURS = 12;
 export const VOTING_MS = VOTING_HOURS * 60 * 60 * 1000;
@@ -19,10 +26,13 @@ export const MAX_CANDIDATES = 10;
 
 @Injectable()
 export class ReadSessionsService {
+  private readonly logger = new Logger(ReadSessionsService.name);
+
   constructor(
     @Inject(READ_SESSIONS_REPOSITORY)
     private readonly sessions: ReadSessionsStore,
     @Inject(VOTE_PUBLISHER) private readonly votes: VotePublisher,
+    @Inject(DISCORD_ALLOWED_GUILD_ID) private readonly guildId: string,
   ) {}
 
   list() {
@@ -37,11 +47,11 @@ export class ReadSessionsService {
 
     return details
       .filter((session) => session !== null)
-      .map((session) => toMemberSessionSummary(toMemberSession(session)));
+      .map((session) => toMemberSessionSummary(this.memberView(session)));
   }
 
   async getForMember(id: string) {
-    return toMemberSession(await this.getById(id));
+    return this.memberView(await this.getById(id));
   }
 
   markMidtermPosted(sessionId: string, now = new Date()) {
@@ -129,6 +139,52 @@ export class ReadSessionsService {
     return this.getById(sessionId);
   }
 
+  async setParticipation(
+    sessionId: string,
+    userId: string,
+    participation: ReadParticipation,
+  ) {
+    const session = await this.getById(sessionId);
+    if (session.status !== "voting" && session.status !== "active") {
+      throw new ConflictException("Participation is closed for this session");
+    }
+
+    if (!session.readers.some((reader) => reader.userId === userId)) {
+      throw new NotFoundException("Reader not found");
+    }
+
+    if (participation === "dnf" && session.status !== "active") {
+      throw new ConflictException(
+        "Did not finish is only for the current book",
+      );
+    }
+
+    const updated = await this.sessions.setParticipation(
+      sessionId,
+      userId,
+      participation,
+    );
+    if (!updated) {
+      throw new NotFoundException("Reader not found");
+    }
+
+    if (session.status === "active") {
+      await this.completeIfDue(sessionId);
+    }
+
+    return this.getById(sessionId);
+  }
+
+  async setMyParticipation(userId: string, participation: ReadParticipation) {
+    const open = await this.sessions.findOpen();
+    if (!open) {
+      throw new ConflictException("No open session");
+    }
+
+    await this.setParticipation(open.id, userId, participation);
+    return this.currentForMember(userId);
+  }
+
   async removeReader(sessionId: string, userId: string) {
     const session = await this.getById(sessionId);
     if (session.status === "active" || session.status === "completed") {
@@ -157,14 +213,42 @@ export class ReadSessionsService {
       throw new ConflictException("Session is not voting");
     }
 
-    const winner = pickWinner(session, input);
+    return this.finishVoting(session, pickWinner(session, input), now);
+  }
+
+  async resolveDueVote(
+    sessionId: string,
+    counts: PollCount[],
+    now = new Date(),
+  ) {
+    const session = await this.getById(sessionId);
+    if (session.status !== "voting") {
+      return session;
+    }
+
+    if (!session.votingDeadline || now <= session.votingDeadline) {
+      return session;
+    }
+
+    return this.finishVoting(
+      session,
+      pickPollWinner(session.candidates, counts),
+      now,
+    );
+  }
+
+  private async finishVoting(
+    session: ReadSessionDetail,
+    winner: ReadSessionCandidate,
+    now: Date,
+  ) {
     const startedAt = now;
     const readingDeadline = calculateReadingDeadline(
       winner.pageCount,
       startedAt,
     );
 
-    await this.sessions.update(sessionId, {
+    await this.sessions.update(session.id, {
       bookId: winner.bookId,
       status: "active",
       votingEndedAt: now,
@@ -173,11 +257,18 @@ export class ReadSessionsService {
     });
     await this.sessions.setBookStatus(winner.bookId, "reading");
     await this.sessions.createProgress(
-      sessionId,
+      session.id,
       session.readers.map((reader) => reader.userId),
     );
 
-    return this.getById(sessionId);
+    const resolved = await this.getById(session.id);
+    try {
+      await this.votes.announceWinner(winner.title);
+    } catch (error) {
+      this.logger.error(error);
+    }
+
+    return resolved;
   }
 
   async cancel(sessionId: string, now = new Date()) {
@@ -223,9 +314,14 @@ export class ReadSessionsService {
       return session;
     }
 
-    const progress = await this.sessions.listProgress(sessionId);
     const allDone =
-      progress.length > 0 && progress.every((row) => row.isCompleted);
+      session.readers.length > 0 &&
+      session.readers.every(
+        (reader) =>
+          reader.participation === "sat_out" ||
+          reader.participation === "dnf" ||
+          reader.progress?.isCompleted === true,
+      );
     const deadlineHit =
       session.readingDeadline !== null && now > session.readingDeadline;
 
@@ -254,7 +350,7 @@ export class ReadSessionsService {
         session.book?.status === "completed");
 
     return {
-      session: toMemberSession(session),
+      session: this.memberView(session),
       progress,
       canReview,
       review: review ? { rating: review.rating, body: review.body } : null,
@@ -407,6 +503,10 @@ export class ReadSessionsService {
     return updated;
   }
 
+  private memberView(session: ReadSessionDetail) {
+    return toMemberSession(session, this.guildId);
+  }
+
   private async progressForBook(userId: string, bookId: string) {
     const progress = await this.sessions.findProgressForBook(userId, bookId);
     if (!progress) {
@@ -473,6 +573,41 @@ export class ReadSessionsService {
 
     return updated;
   }
+}
+
+function pickPollWinner(
+  candidates: ReadSessionCandidate[],
+  counts: PollCount[],
+) {
+  if (candidates.length === 0) {
+    throw new BadRequestException("Slate is empty");
+  }
+
+  const votesByAnswer = new Map(
+    counts.map((count) => [count.answerId, count.votes]),
+  );
+  let best = -1;
+  let leaders: ReadSessionCandidate[] = [];
+  for (const candidate of candidates) {
+    const votes =
+      candidate.discordAnswerId === null
+        ? 0
+        : (votesByAnswer.get(candidate.discordAnswerId) ?? 0);
+    if (votes > best) {
+      best = votes;
+      leaders = [candidate];
+    } else if (votes === best) {
+      leaders.push(candidate);
+    }
+  }
+
+  const index = Math.floor(Math.random() * leaders.length);
+  const winner = leaders[index];
+  if (!winner) {
+    throw new BadRequestException("Slate is empty");
+  }
+
+  return winner;
 }
 
 function orderBooks(books: ReadBook[], bookIds: string[]) {

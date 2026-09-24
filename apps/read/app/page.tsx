@@ -10,6 +10,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { BookCover } from "../components/book-cover";
 import { NominateBookDialog } from "../components/nominate-dialog";
+import { ParticipationForm } from "../components/participation-form";
 import { ProgressForm } from "../components/progress-form";
 import { ReaderBoard } from "../components/reader-board";
 import { ReviewForm } from "../components/review-form";
@@ -78,6 +79,7 @@ function CurrentSessionHero({
 }) {
   const { session, progress } = current;
   const book = session.book;
+  const you = session.readers.find((reader) => reader.userId === youId);
   const showBoard =
     session.status === "active" || session.status === "completed";
 
@@ -89,6 +91,27 @@ function CurrentSessionHero({
           <p className="max-w-md text-muted-foreground">
             The ballot is in the reading channel. The reasons are here.
           </p>
+          {session.votingDeadline ? (
+            <p className="font-mono text-sm tabular-nums">
+              Closes{" "}
+              {format(parseISO(session.votingDeadline), "d MMM yyyy, HH:mm")}
+            </p>
+          ) : null}
+          {session.pollUrl ? (
+            <Button
+              render={
+                <a href={session.pollUrl} rel="noreferrer" target="_blank" />
+              }
+            >
+              Open the poll
+            </Button>
+          ) : null}
+          {you ? (
+            <ParticipationForm
+              participation={you.participation}
+              sessionStatus={session.status}
+            />
+          ) : null}
         </div>
         <ol className="border-t border-foreground/15">
           {session.candidates.map((candidate, index) => (
@@ -134,7 +157,15 @@ function CurrentSessionHero({
           ) : null}
         </div>
       </div>
-      {session.status === "active" && progress ? (
+      {you ? (
+        <ParticipationForm
+          participation={you.participation}
+          sessionStatus={session.status}
+        />
+      ) : null}
+      {session.status === "active" &&
+      progress &&
+      you?.participation === "reading" ? (
         <ProgressForm
           bookId={book?.id}
           initialNotes={progress.notes}

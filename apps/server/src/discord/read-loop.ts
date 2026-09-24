@@ -4,6 +4,7 @@ import { Context, type ContextOf, Once } from "necord";
 import { shouldPostMidterm } from "../read/midterm";
 import { ReadSessionsService } from "../read/sessions.service";
 import { DISCORD_READ_CHANNEL_ID } from "./discord.constants";
+import { DiscordVotePublisher } from "./discord-vote.publisher";
 
 const HOUR_MS = 60 * 60 * 1000;
 
@@ -15,6 +16,7 @@ export class ReadLoop {
     @Inject(ReadSessionsService) private readonly sessions: ReadSessionsService,
     @Inject(Client) private readonly client: Client,
     @Inject(DISCORD_READ_CHANNEL_ID) private readonly channelId: string,
+    @Inject(DiscordVotePublisher) private readonly votes: DiscordVotePublisher,
   ) {}
 
   @Once("clientReady")
@@ -35,6 +37,27 @@ export class ReadLoop {
     );
     if (!open) {
       return;
+    }
+
+    if (
+      open.status === "voting" &&
+      open.votingDeadline !== null &&
+      now > open.votingDeadline
+    ) {
+      try {
+        const voting = await this.sessions.getById(open.id);
+        if (!voting.discordPollChannelId || !voting.discordPollMessageId) {
+          throw new Error("Discord poll is missing");
+        }
+
+        const counts = await this.votes.tallyPoll(
+          voting.discordPollChannelId,
+          voting.discordPollMessageId,
+        );
+        await this.sessions.resolveDueVote(voting.id, counts, now);
+      } catch (error) {
+        this.logger.error(error);
+      }
     }
 
     if (open.status === "active") {

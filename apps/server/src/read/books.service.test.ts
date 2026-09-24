@@ -8,6 +8,7 @@ import {
   OPEN_LIBRARY,
   READ_BOOKS_REPOSITORY,
   READ_NOMINATIONS_REPOSITORY,
+  READ_SESSIONS_REPOSITORY,
 } from "./read.constants";
 
 const book: ReadBook = {
@@ -58,6 +59,7 @@ function createStore(overrides: Record<string, ReturnType<typeof mock>> = {}) {
 async function createService(
   store: ReturnType<typeof createStore>,
   search: ReturnType<typeof mock> = mock(() => Promise.resolve([])),
+  isOnOpenSlate: ReturnType<typeof mock> = mock(() => Promise.resolve(false)),
 ) {
   const module = await Test.createTestingModule({
     providers: [
@@ -69,6 +71,10 @@ async function createService(
         useValue: {
           findOpenByBookId: mock(() => Promise.resolve(null)),
         },
+      },
+      {
+        provide: READ_SESSIONS_REPOSITORY,
+        useValue: { isOnOpenSlate },
       },
     ],
   }).compile();
@@ -102,19 +108,38 @@ test("throws when a book is missing", async () => {
   );
 });
 
-test("reallocates the slug when the title changes", async () => {
-  const store = createStore({
-    update: mock(() =>
-      Promise.resolve({ ...book, title: "Dune", slug: "dune" }),
-    ),
-  });
+test("keeps the slug when the title changes", async () => {
+  const store = createStore();
   const service = await createService(store);
 
   await service.update(book.id, { title: "Dune" });
-  expect(store.update).toHaveBeenCalledWith(
-    book.id,
-    expect.objectContaining({ title: "Dune", slug: "dune" }),
+  expect(store.update).toHaveBeenCalledWith(book.id, { title: "Dune" });
+});
+
+test("refuses a nomination for a book already on the open slate", async () => {
+  const service = await createService(
+    createStore(),
+    mock(() => Promise.resolve([])),
+    mock(() => Promise.resolve(true)),
   );
+
+  await expect(service.getBySlug(book.slug, book.id)).resolves.toMatchObject({
+    viewer: { canNominate: false },
+  });
+});
+
+test("refuses a nomination for a book the club already read", async () => {
+  const service = await createService(
+    createStore({
+      findBySlug: mock(() =>
+        Promise.resolve({ ...book, status: "completed" as const }),
+      ),
+    }),
+  );
+
+  await expect(service.getBySlug(book.slug, book.id)).resolves.toMatchObject({
+    viewer: { canNominate: false },
+  });
 });
 
 test("lets a member review a club book they have not reviewed", async () => {

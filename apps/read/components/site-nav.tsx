@@ -30,15 +30,15 @@ export function SiteNav() {
             aria-current={current ? "page" : undefined}
             className={
               current
-                ? "relative py-1 font-medium text-[#f4f4f1]"
-                : "py-1 text-[#f4f4f1]/55 hover:text-[#f4f4f1]"
+                ? "relative py-1 font-medium text-foreground"
+                : "py-1 text-muted-foreground hover:text-foreground"
             }
             href={link.href}
             key={link.href}
           >
             {link.label}
             {current ? (
-              <span className="absolute inset-x-0 -bottom-0.5 h-0.5 bg-[#d01212]" />
+              <span className="absolute inset-x-0 -bottom-0.5 h-0.5 bg-primary" />
             ) : null}
           </Link>
         );

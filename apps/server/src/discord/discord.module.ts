@@ -40,6 +40,6 @@ import { ReadLoop } from "./read-loop";
     ProgressCommands,
     ReadLoop,
   ],
-  exports: [DiscordVotePublisher],
+  exports: [DiscordVotePublisher, DISCORD_ALLOWED_GUILD_ID],
 })
 export class DiscordModule {}

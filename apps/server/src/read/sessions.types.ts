@@ -1,4 +1,7 @@
-import type { READ_SESSION_STATUS_VALUES } from "@brigada/db/schema";
+import type {
+  READ_SESSION_STATUS_VALUES,
+  ReadParticipation,
+} from "@brigada/db/schema";
 import type { ReadBook } from "./books.types";
 
 export type ReadSessionStatus = (typeof READ_SESSION_STATUS_VALUES)[number];
@@ -36,6 +39,7 @@ export type ReadSessionReader = {
   username: string;
   name: string;
   image: string | null;
+  participation: ReadParticipation;
   progress: ReadSessionReaderProgress | null;
   review: ReadSessionReaderReview | null;
 };
@@ -126,6 +130,12 @@ export type ReadSessionsStore = {
   ): Promise<void>;
   replaceReaders(sessionId: string, userIds: string[]): Promise<void>;
   removeReader(sessionId: string, userId: string): Promise<boolean>;
+  isOnOpenSlate(bookId: string): Promise<boolean>;
+  setParticipation(
+    sessionId: string,
+    userId: string,
+    participation: ReadParticipation,
+  ): Promise<boolean>;
   listMemberIds(): Promise<string[]>;
   findBooksByIds(ids: string[]): Promise<ReadBook[]>;
   listReadlist(): Promise<ReadBook[]>;

@@ -20,10 +20,7 @@ export class DiscordVotePublisher implements VotePublisher {
   ) {}
 
   async postPoll(candidates: VoteCandidate[]): Promise<VotePublishResult> {
-    const channel = await this.client.channels.fetch(this.channelId);
-    if (!channel || channel.type !== ChannelType.GuildText) {
-      throw new Error("Read Discord channel is missing or not a text channel");
-    }
+    const channel = await this.textChannel(this.channelId);
 
     const slate = candidates
       .map(
@@ -52,5 +49,36 @@ export class DiscordVotePublisher implements VotePublisher {
         answerId: index + 1,
       })),
     };
+  }
+
+  async announceWinner(title: string) {
+    const channel = await this.textChannel(this.channelId);
+    await channel.send({ content: `**${title}** won the vote.` });
+  }
+
+  async tallyPoll(channelId: string, messageId: string) {
+    const channel = await this.textChannel(channelId);
+    const message = await channel.messages.fetch(messageId);
+    if (!message.poll) {
+      throw new Error("Discord poll is missing");
+    }
+
+    const poll = message.poll.resultsFinalized
+      ? message.poll
+      : await message.poll.fetch();
+
+    return [...poll.answers.values()].map((answer) => ({
+      answerId: answer.id,
+      votes: answer.voteCount,
+    }));
+  }
+
+  private async textChannel(channelId: string) {
+    const channel = await this.client.channels.fetch(channelId);
+    if (!channel || channel.type !== ChannelType.GuildText) {
+      throw new Error("Read Discord channel is missing or not a text channel");
+    }
+
+    return channel;
   }
 }

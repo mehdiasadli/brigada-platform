@@ -23,6 +23,7 @@ import {
   readSessionsQueryKey,
   removeReadReader,
   resolveReadVote,
+  setReadParticipation,
   setReadReaderProgress,
   setReadSlate,
   startReadVoting,
@@ -111,6 +112,16 @@ export function ReadSessionsPage() {
     mutationFn: (userId: string) => removeReadReader(selectedId ?? "", userId),
     onSuccess: invalidate,
   });
+  const setParticipation = useMutation({
+    mutationFn: ({
+      userId,
+      participation,
+    }: {
+      userId: string;
+      participation: "reading" | "sat_out" | "dnf";
+    }) => setReadParticipation(selectedId ?? "", userId, participation),
+    onSuccess: invalidate,
+  });
   const updateProgress = useMutation({
     mutationFn: ({
       userId,
@@ -129,6 +140,7 @@ export function ReadSessionsPage() {
     cancel.isPending ||
     complete.isPending ||
     removeReader.isPending ||
+    setParticipation.isPending ||
     updateProgress.isPending;
 
   return (
@@ -156,6 +168,7 @@ export function ReadSessionsPage() {
           cancel.error,
           complete.error,
           removeReader.error,
+          setParticipation.error,
           updateProgress.error,
         )}
       />
@@ -210,6 +223,9 @@ export function ReadSessionsPage() {
           );
         }}
         onStartVoting={() => start.mutate()}
+        onSetParticipation={(userId, participation) =>
+          setParticipation.mutate({ userId, participation })
+        }
         onUpdateProgress={(userId, input) =>
           updateProgress.mutate({ userId, input })
         }

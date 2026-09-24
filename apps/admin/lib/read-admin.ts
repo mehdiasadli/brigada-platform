@@ -52,6 +52,7 @@ export type ReadSessionReader = {
   username: string;
   name: string;
   image: string | null;
+  participation: "reading" | "sat_out" | "dnf";
   progress: {
     percentage: number;
     notes: string | null;
@@ -160,6 +161,7 @@ export function updateReadBook(
       | "subtitle"
       | "description"
       | "status"
+      | "coverId"
     >
   >,
 ) {
@@ -259,6 +261,17 @@ export function removeReadReader(sessionId: string, userId: string) {
   return readAdminFetch<ReadSessionDetail>(
     `/api/admin/read/sessions/${sessionId}/readers/${userId}`,
     { method: "DELETE" },
+  );
+}
+
+export function setReadParticipation(
+  sessionId: string,
+  userId: string,
+  participation: "reading" | "sat_out" | "dnf",
+) {
+  return readAdminFetch<ReadSessionDetail>(
+    `/api/admin/read/sessions/${sessionId}/readers/${userId}/participation`,
+    { method: "PATCH", body: JSON.stringify({ participation }) },
   );
 }
 

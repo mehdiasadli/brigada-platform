@@ -2,6 +2,7 @@ import "reflect-metadata";
 import { expect, mock, test } from "bun:test";
 import { BadRequestException, ConflictException } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
+import { DISCORD_ALLOWED_GUILD_ID } from "../discord/discord.constants";
 import { READ_SESSIONS_REPOSITORY, VOTE_PUBLISHER } from "./read.constants";
 import { ReadSessionsService, VOTING_MS } from "./sessions.service";
 import type { ReadSessionCandidate, ReadSessionDetail } from "./sessions.types";
@@ -68,6 +69,7 @@ function session(
         username: "ada",
         name: "Ada",
         image: null,
+        participation: "reading" as const,
         progress: null,
         review: null,
       },
@@ -90,6 +92,7 @@ function createStore(
     setCandidateAnswers: mock(() => Promise.resolve()),
     replaceReaders: mock(() => Promise.resolve()),
     removeReader: mock(() => Promise.resolve(true)),
+    setParticipation: mock(() => Promise.resolve(true)),
     listMemberIds: mock(() => Promise.resolve([userId])),
     findBooksByIds: mock(() =>
       Promise.resolve([book, { ...book, id: otherBookId }]),
@@ -144,19 +147,33 @@ function createStore(
 
 async function createService(
   store: ReturnType<typeof createStore>,
-  postPoll = mock(() =>
-    Promise.resolve({
-      messageId: "m1",
-      channelId: "c1",
-      answers: [{ candidateId: candidate.id, answerId: 1 }],
-    }),
-  ),
+  votes: {
+    postPoll?: ReturnType<typeof mock>;
+    announceWinner?: ReturnType<typeof mock>;
+    tallyPoll?: ReturnType<typeof mock>;
+  } = {},
 ) {
   const module = await Test.createTestingModule({
     providers: [
       ReadSessionsService,
       { provide: READ_SESSIONS_REPOSITORY, useValue: store },
-      { provide: VOTE_PUBLISHER, useValue: { postPoll } },
+      {
+        provide: VOTE_PUBLISHER,
+        useValue: {
+          postPoll:
+            votes.postPoll ??
+            mock(() =>
+              Promise.resolve({
+                messageId: "m1",
+                channelId: "c1",
+                answers: [{ candidateId: candidate.id, answerId: 1 }],
+              }),
+            ),
+          announceWinner: votes.announceWinner ?? mock(() => Promise.resolve()),
+          tallyPoll: votes.tallyPoll ?? mock(() => Promise.resolve([])),
+        },
+      },
+      { provide: DISCORD_ALLOWED_GUILD_ID, useValue: "123456789012345678" },
     ],
   }).compile();
 
@@ -207,6 +224,114 @@ test("resolves a vote into an active session with a deadline", async () => {
       readingDeadline: new Date("2026-09-14T00:00:00.000Z"),
     }),
   );
+});
+
+test("resolves a due vote from poll counts", async () => {
+  const store = createStore(
+    session({
+      status: "voting",
+      votingDeadline: new Date("2026-09-14T09:00:00.000Z"),
+      candidates: [
+        candidate,
+        {
+          ...candidate,
+          id: "c2",
+          bookId: otherBookId,
+          title: "Dune Messiah",
+          discordAnswerId: 2,
+        },
+      ],
+    }),
+  );
+  const announceWinner = mock(() => Promise.resolve());
+  const service = await createService(store, { announceWinner });
+  const now = new Date("2026-09-14T10:00:00.000Z");
+
+  await service.resolveDueVote(
+    sessionId,
+    [
+      { answerId: 1, votes: 1 },
+      { answerId: 2, votes: 4 },
+    ],
+    now,
+  );
+
+  expect(store.update).toHaveBeenCalledWith(
+    sessionId,
+    expect.objectContaining({ bookId: otherBookId, status: "active" }),
+  );
+  expect(announceWinner).toHaveBeenCalledWith("Dune Messiah");
+});
+
+test("breaks a poll tie at random among the leaders", async () => {
+  const tied = [
+    candidate,
+    {
+      ...candidate,
+      id: "c2",
+      bookId: otherBookId,
+      title: "Dune Messiah",
+      discordAnswerId: 2,
+    },
+  ];
+  const store = createStore(
+    session({
+      status: "voting",
+      votingDeadline: new Date("2026-09-14T09:00:00.000Z"),
+      candidates: tied,
+    }),
+  );
+  const service = await createService(store);
+  const random = Math.random;
+  Math.random = () => 0.99;
+
+  try {
+    await service.resolveDueVote(
+      sessionId,
+      [
+        { answerId: 1, votes: 2 },
+        { answerId: 2, votes: 2 },
+      ],
+      new Date("2026-09-14T10:00:00.000Z"),
+    );
+  } finally {
+    Math.random = random;
+  }
+
+  expect(store.update).toHaveBeenCalledWith(
+    sessionId,
+    expect.objectContaining({ bookId: otherBookId }),
+  );
+});
+
+test("leaves a vote open before the deadline", async () => {
+  const store = createStore(
+    session({
+      status: "voting",
+      votingDeadline: new Date("2026-09-14T12:00:00.000Z"),
+    }),
+  );
+  const service = await createService(store);
+
+  await service.resolveDueVote(
+    sessionId,
+    [{ answerId: 1, votes: 9 }],
+    new Date("2026-09-14T10:00:00.000Z"),
+  );
+
+  expect(store.update).not.toHaveBeenCalled();
+});
+
+test("still resolves when the winner post fails", async () => {
+  const store = createStore(session({ status: "voting" }));
+  const service = await createService(store, {
+    announceWinner: mock(() => Promise.reject(new Error("discord down"))),
+  });
+
+  await expect(
+    service.resolveVoting(sessionId, { winnerBookId: bookId }, new Date()),
+  ).resolves.toBeDefined();
+  expect(store.update).toHaveBeenCalled();
 });
 
 test("rejects resolving without a winner", async () => {
@@ -474,6 +599,7 @@ test("lists member sessions without private notes", async () => {
         username: "ada",
         name: "Ada",
         image: null,
+        participation: "reading" as const,
         progress: {
           percentage: 100,
           notes: "secret",
@@ -501,11 +627,30 @@ test("lists member sessions without private notes", async () => {
 });
 
 test("completes when every reader is done", async () => {
-  const store = createStore(session({ status: "active", bookId }), {
-    listProgress: mock(() =>
-      Promise.resolve([{ isCompleted: true }, { isCompleted: true }]),
-    ),
-  });
+  const store = createStore(
+    session({
+      status: "active",
+      bookId,
+      readers: [
+        {
+          userId,
+          username: "ada",
+          name: "Ada",
+          image: null,
+          participation: "reading",
+          progress: {
+            percentage: 100,
+            notes: null,
+            isCompleted: true,
+            startedAt: new Date(),
+            completedAt: new Date(),
+            progressUpdatedAt: new Date(),
+          },
+          review: null,
+        },
+      ],
+    }),
+  );
   const service = await createService(store);
 
   await service.completeIfDue(sessionId);
@@ -514,4 +659,49 @@ test("completes when every reader is done", async () => {
     sessionId,
     expect.objectContaining({ status: "completed" }),
   );
+});
+
+test("treats sit-out and DNF as finished for completion", async () => {
+  const store = createStore(
+    session({
+      status: "active",
+      bookId,
+      readers: [
+        {
+          userId,
+          username: "ada",
+          name: "Ada",
+          image: null,
+          participation: "sat_out",
+          progress: {
+            percentage: 0,
+            notes: null,
+            isCompleted: false,
+            startedAt: null,
+            completedAt: null,
+            progressUpdatedAt: new Date(),
+          },
+          review: null,
+        },
+      ],
+    }),
+  );
+  const service = await createService(store);
+
+  await service.completeIfDue(sessionId);
+
+  expect(store.update).toHaveBeenCalledWith(
+    sessionId,
+    expect.objectContaining({ status: "completed" }),
+  );
+});
+
+test("refuses did-not-finish before a book is picked", async () => {
+  const service = await createService(
+    createStore(session({ status: "voting" })),
+  );
+
+  await expect(
+    service.setParticipation(sessionId, userId, "dnf"),
+  ).rejects.toBeInstanceOf(ConflictException);
 });

@@ -40,6 +40,7 @@ const session: ReadSessionDetail = {
       username: "ada",
       name: "Ada",
       image: "https://cdn.example/ada.png",
+      participation: "reading",
       progress: {
         percentage: 100,
         notes: "private note",
@@ -55,6 +56,7 @@ const session: ReadSessionDetail = {
       username: "al",
       name: "Al",
       image: null,
+      participation: "reading",
       progress: {
         percentage: 40,
         notes: "another note",
@@ -78,9 +80,14 @@ test("strips notes and review bodies from member sessions", () => {
     username: "ada",
     name: "Ada",
     image: "https://cdn.example/ada.png",
+    participation: "reading",
     progress: { percentage: 100, isCompleted: true },
     rating: 8,
   });
+  expect(member.pollUrl).toBeNull();
+  expect(toMemberSession(session, "123456789012345678").pollUrl).toBe(
+    "https://discord.com/channels/123456789012345678/c1/m1",
+  );
   expect(member.averageRating).toBe(8);
   expect(JSON.stringify(member)).not.toContain("private");
 });

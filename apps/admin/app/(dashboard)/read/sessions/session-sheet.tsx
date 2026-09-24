@@ -14,6 +14,13 @@ import {
 } from "@brigada/ui/components/dialog";
 import { Field, FieldGroup, FieldLabel } from "@brigada/ui/components/field";
 import { NumberInput } from "@brigada/ui/components/number-input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@brigada/ui/components/select";
 import { Separator } from "@brigada/ui/components/separator";
 import {
   Sheet,
@@ -80,6 +87,7 @@ export function SessionSheet({
   onPickWinner,
   onRandomWinner,
   onRemoveReader,
+  onSetParticipation,
   onComplete,
   onCancel,
   onUpdateProgress,
@@ -97,6 +105,10 @@ export function SessionSheet({
   onPickWinner: (bookId: string) => void;
   onRandomWinner: () => void;
   onRemoveReader: (userId: string) => void;
+  onSetParticipation: (
+    userId: string,
+    participation: ReadSessionReader["participation"],
+  ) => void;
   onComplete: () => void;
   onCancel: () => void;
   onUpdateProgress: (
@@ -345,6 +357,16 @@ export function SessionSheet({
                               Remove
                             </Button>
                           ) : null}
+                          {canVote || canComplete ? (
+                            <ParticipationSelect
+                              disabled={pending}
+                              includeDnf={canComplete}
+                              onChange={(participation) =>
+                                onSetParticipation(reader.userId, participation)
+                              }
+                              value={reader.participation ?? "reading"}
+                            />
+                          ) : null}
                           {canEditProgress ? (
                             <Button
                               disabled={pending}
@@ -547,6 +569,47 @@ function SummaryStat({ label, value }: { label: string; value: string }) {
       <p className="text-sm text-muted-foreground">{label}</p>
       <p className="font-medium">{value}</p>
     </div>
+  );
+}
+
+function ParticipationSelect({
+  value,
+  includeDnf,
+  disabled,
+  onChange,
+}: {
+  value: ReadSessionReader["participation"];
+  includeDnf: boolean;
+  disabled: boolean;
+  onChange: (participation: ReadSessionReader["participation"]) => void;
+}) {
+  const items = [
+    { value: "reading", label: "Reading" },
+    { value: "sat_out", label: "Sat out" },
+    ...(includeDnf ? [{ value: "dnf", label: "Did not finish" }] : []),
+  ];
+
+  return (
+    <Select
+      items={items}
+      onValueChange={(next) => {
+        if (next === "reading" || next === "sat_out" || next === "dnf") {
+          onChange(next);
+        }
+      }}
+      value={value}
+    >
+      <SelectTrigger className="w-36" disabled={disabled} size="sm">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        {items.map((item) => (
+          <SelectItem key={item.value} value={item.value}>
+            {item.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   );
 }
 
